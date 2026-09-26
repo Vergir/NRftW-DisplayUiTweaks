@@ -20,6 +20,7 @@ internal static class Prefs
     public static MelonPreferences_Entry<bool> FitPanelsToBox = null!;
     public static MelonPreferences_Entry<bool> StretchMismatchedRoots = null!;
     public static MelonPreferences_Entry<float> HudScalePercent = null!;
+    public static MelonPreferences_Entry<float> MenuScalePercent = null!;
     public static MelonPreferences_Entry<float> UiBoxAspect = null!;
     public static MelonPreferences_Entry<float> MenuDpiThreshold = null!;
     public static MelonPreferences_Entry<bool> AddSettingsRows = null!;
@@ -36,7 +37,9 @@ internal static class Prefs
         DisableLetterbox = _cat.CreateEntry("DisableLetterbox", true,
             description: "Let the world fill the screen on non-16:9 displays (MoonRenderPipelineAsset.Enforce169Aspect = Never).");
         HudScalePercent = _cat.CreateEntry("HudScalePercent", 100f,
-            description: "HUD/overlay canvas scale relative to the game's own scale (10-150). Also a slider in Options > Display.");
+            description: "In-game HUD, overlays and dialogue (canvases with fallback DPI 96): scale relative to the game's own (10-150). Also a slider in Options > Display.");
+        MenuScalePercent = _cat.CreateEntry("MenuScalePercent", 100f,
+            description: "Menus (inventory, stats, map, settings...; fallback DPI 221.5 and UI Toolkit panels): scale relative to the game's own, after the fit-to-box cap (10-150). Also a slider in Options > Display.");
         UiBoxAspect = _cat.CreateEntry("UiBoxAspect", GameDefaultUiBoxAspect,
             description: "Aspect ratio of the HUD box for the 'Custom (More Aspect Ratios)' UI aspect mode (1.00-4.00). Also a slider in Options > Display.");
         FitMenusToBox = _cat.CreateEntry("FitMenusToBox", true,
@@ -54,6 +57,7 @@ internal static class Prefs
     public static void Save() => MelonPreferences.Save();
 
     public static float HudScale => Clamp(HudScalePercent.Value, HudScaleMin, HudScaleMax) / 100f;
+    public static float MenuScale => Clamp(MenuScalePercent.Value, HudScaleMin, HudScaleMax) / 100f;
     public static float BoxAspect => Clamp(UiBoxAspect.Value, UiBoxAspectMin, UiBoxAspectMax);
 
     private static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;

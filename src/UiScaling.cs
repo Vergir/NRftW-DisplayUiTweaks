@@ -55,11 +55,20 @@ internal static class UiScaling
             return Mathf.Approximately(hud, 1f) ? null : game * hud;
         }
 
-        if (!Prefs.FitMenusToBox.Value) return null;
-        float refW = s.referenceResolution.x;
-        if (refW <= 0f) return null;
-        float fit = UiBox.GlobalBoxWidthPx() / refW;
-        return fit < game ? fit : null;
+        float target = MenuTarget(game, s.referenceResolution.x);
+        return Mathf.Approximately(target, game) ? null : target;
+    }
+
+    /// <summary>Menu scale: the game's value, capped so the reference width fits the HUD box, times the Menu Size slider.</summary>
+    private static float MenuTarget(float game, float refW)
+    {
+        float target = game;
+        if (Prefs.FitMenusToBox.Value && refW > 0f)
+        {
+            float fit = UiBox.GlobalBoxWidthPx() / refW;
+            if (fit < target) target = fit;
+        }
+        return target * Prefs.MenuScale;
     }
 
     // ---- UI Toolkit -------------------------------------------------------------------------------------------
@@ -100,6 +109,18 @@ internal static class UiScaling
         MoreAspectRatiosMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the HUD box, " + restored + " restored");
     }
 
+    /// <summary>Put every panel we touched back to the game's settings (hot reload / mod unload).</summary>
+    public static void RestorePanels()
+    {
+        foreach (var p in Resources.FindObjectsOfTypeAll<PanelSettings>())
+        {
+            if (p == null || !_panelOriginals.TryGetValue(p.GetInstanceID(), out var orig)) continue;
+            p.scaleMode = orig.Mode;
+            p.scale = orig.Scale;
+        }
+        _panelOriginals.Clear();
+    }
+
     /// <summary>Returns 1 when the panel was fitted, -1 when restored to the game's setting, 0 when untouched.</summary>
     public static int ApplyPanel(PanelSettings p)
     {
@@ -115,15 +136,18 @@ internal static class UiScaling
         }
 
         float? target = null;
-        if (Prefs.Enabled.Value && Prefs.FitPanelsToBox.Value)
+        if (Prefs.Enabled.Value)
         {
             float refW = p.referenceResolution.x;
-            if (refW > 0f)
+            float game = GamePanelScale(p, screen);
+            float t = game;
+            if (Prefs.FitPanelsToBox.Value && refW > 0f)
             {
-                float game = GamePanelScale(p, screen);
                 float fit = UiBox.GlobalBoxWidthPx() / refW;
-                if (fit < game) target = fit;
+                if (fit < t) t = fit;
             }
+            t *= Prefs.MenuScale;
+            if (!Mathf.Approximately(t, game)) target = t;
         }
 
         if (target.HasValue)

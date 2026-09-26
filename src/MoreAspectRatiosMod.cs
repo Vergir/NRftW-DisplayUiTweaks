@@ -3,7 +3,7 @@ using MelonLoader;
 using MoreAspectRatios;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.2.2", "vergir")]
+[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.2.3", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
 namespace MoreAspectRatios;
@@ -43,6 +43,14 @@ public class MoreAspectRatiosMod : MelonMod
 
         HarmonyInstance.PatchAll(typeof(MoreAspectRatiosMod).Assembly);
         LoggerInstance.Msg("Patches applied.");
+    }
+
+    /// <summary>Hot reload / unload: give the game back what is not a Harmony patch. The pipeline flag and the debug
+    /// switches are left as they are (harmless, and the next build sets them again).</summary>
+    public override void OnDeinitializeMelon()
+    {
+        try { UiScaling.RestorePanels(); }
+        catch (System.Exception e) { LoggerInstance.Warning("RestorePanels: " + e.Message); }
     }
 
     public override void OnSceneWasLoaded(int buildIndex, string sceneName)

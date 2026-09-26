@@ -9,10 +9,14 @@ Out of the box:
 * no 16:9 letterbox on non-16:9 screens,
 * menus and UI Toolkit panels (map, fast travel, activities) are scaled so they fit inside the HUD box instead of being cropped.
 
-Two new sliders in Options > Display:
+Three new sliders in Options > Display:
 
-* **HUD Size** (10%-150%, game default 100%),
-* **HUD Box Aspect** (1.00-4.00; the box used by the "Custom (More Aspect Ratios)" UI aspect mode - set 1.00 for a square HUD on a 9:8 or 1:1 screen).
+* **HUD Size** (10%-150%, default 100%): the in-game HUD, overlays and dialogue,
+* **Menu Size** (10%-150%, default 100%): inventory, stats, map, settings and the other full-screen menus, applied on top of the fit-to-box shrink,
+* **HUD Box Aspect** (1.00-4.00, default 1.78): the box used by the "Custom (More Aspect Ratios)" UI aspect mode - set 1.00 for a square HUD on a 9:8 or 1:1 screen.
+
+The game uses two kinds of canvases: HUD canvases (fallback DPI 96) and menu canvases (fallback DPI 221.5), which is
+how the two size sliders tell them apart.
 
 Everything else lives in `UserData/MelonPreferences.cfg`, section `[MoreAspectRatios]`.
 

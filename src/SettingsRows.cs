@@ -18,9 +18,9 @@ namespace MoreAspectRatios;
 /// </summary>
 internal static class SettingsRows
 {
-    private const string HudId = "MAR_HudScale", BoxId = "MAR_BoxAspect";
+    private const string HudId = "MAR_HudScale", MenuId = "MAR_MenuScale", BoxId = "MAR_BoxAspect";
 
-    private static LocalizedMessage? _hudName, _hudDesc, _boxName, _boxDesc;
+    private static LocalizedMessage? _hudName, _hudDesc, _menuName, _menuDesc, _boxName, _boxDesc;
     private static readonly List<Transform> _rows = new List<Transform>();
 
     public static void AddTo(DisplaySettingsTab tab)
@@ -45,11 +45,13 @@ internal static class SettingsRows
         if (controls.m_categoryToContentToItem != null && controls.m_categoryToContentToItem.ContainsKey(PlayerSettingCategory.Display))
         {
             var items = controls.m_categoryToContentToItem[PlayerSettingCategory.Display];
-            if (items != null) { items.Remove(HudId); items.Remove(BoxId); }
+            if (items != null) { items.Remove(HudId); items.Remove(MenuId); items.Remove(BoxId); }
         }
 
         _hudName ??= Message(HudId, "HUD Size");
-        _hudDesc ??= Message(HudId + "_Desc", "Scale of the in-game HUD relative to the game's default (More Aspect Ratios mod).");
+        _hudDesc ??= Message(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue relative to the game's default (More Aspect Ratios mod).");
+        _menuName ??= Message(MenuId, "Menu Size");
+        _menuDesc ??= Message(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings) relative to the game's default, after they were shrunk to fit the HUD box (More Aspect Ratios mod).");
         _boxName ??= Message(BoxId, "HUD Box Aspect");
         _boxDesc ??= Message(BoxId + "_Desc", "Width-to-height ratio of the HUD box when UI Aspect is set to Custom (More Aspect Ratios). 1.00 = square, 1.78 = 16:9.");
 
@@ -58,12 +60,17 @@ internal static class SettingsRows
             v => Mathf.RoundToInt(v) + "%",
             v => { Prefs.HudScalePercent.Value = Mathf.Round(v); MoreAspectRatiosMod.OnLayoutPrefChanged(); });
 
+        AddSlider(controls, content, _menuName, _menuDesc,
+            Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.MenuScalePercent.Value,
+            v => Mathf.RoundToInt(v) + "%",
+            v => { Prefs.MenuScalePercent.Value = Mathf.Round(v); MoreAspectRatiosMod.OnLayoutPrefChanged(); });
+
         AddSlider(controls, content, _boxName, _boxDesc,
             Prefs.UiBoxAspectMin, Prefs.UiBoxAspectMax, Prefs.UiBoxAspectStep, Prefs.UiBoxAspect.Value,
             v => v.ToString("0.00"),
             v => { Prefs.UiBoxAspect.Value = Mathf.Round(v * 100f) / 100f; MoreAspectRatiosMod.OnLayoutPrefChanged(); });
 
-        MoreAspectRatiosMod.Log.Msg("Added HUD Size and HUD Box Aspect sliders to Options > Display");
+        MoreAspectRatiosMod.Log.Msg("Added HUD Size, Menu Size and HUD Box Aspect sliders to Options > Display");
     }
 
     private static void AddSlider(SettingsScreenControls controls, RectTransform? content, LocalizedMessage name, LocalizedMessage desc,
