@@ -34,8 +34,9 @@
   </ItemGroup>
 
   <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true' And Exists('$(GameDir)\Mods')">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\Mods" />
-    <Message Importance="high" Text="MoreAspectRatios.dll -> $(GameDir)\Mods" />
+    <!-- ContinueOnError: a running game holds the DLL; the build still succeeds and the copy happens next build. -->
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\Mods" Retries="2" RetryDelayMilliseconds="500" ContinueOnError="true" />
+    <Message Importance="high" Text="$(AssemblyName).dll -> $(GameDir)\Mods" />
   </Target>
 
 </Project>
