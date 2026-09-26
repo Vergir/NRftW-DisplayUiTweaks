@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+* Fix: after a hot reload, Back (Esc / B) stopped working in the settings screen. The unloaded build destroyed its
+  dropdown row but left it in the settings screen's dropdown list, so Back hit a destroyed object. Rows are now
+  unregistered before they are destroyed, and stale references left by older builds are cleaned up.
+
 ## 1.0.0
 
 First public release.

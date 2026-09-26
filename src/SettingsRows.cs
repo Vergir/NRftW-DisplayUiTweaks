@@ -48,6 +48,9 @@ internal static class SettingsRows
         var content = DisplayContent(controls);
         if (content == null) { MoreAspectRatiosMod.Log.Warning("Display tab has no content root yet"); return; }
 
+        // Repair screens left behind by an older build that destroyed its rows without unregistering them.
+        ForgetRows(controls, oursToo: false);
+
         if (content.Find(HudId) != null)
         {
             MoreAspectRatiosMod.Log.Msg("Settings rows already present, skipping");
@@ -94,6 +97,9 @@ internal static class SettingsRows
         {
             var controls = s != null && s.m_displayTab != null ? s.m_displayTab.m_controls : null;
             if (controls == null) continue;
+            // Unregister first: the controls keep direct references to dropdown rows (Back asks every one IsOpen)
+            // and to the selected / modal row; a destroyed row left in there makes Back throw.
+            ForgetRows(controls, oursToo: true);
             var content = DisplayContent(controls);
             if (content != null)
                 for (int i = content.childCount - 1; i >= 0; i--)
@@ -104,6 +110,34 @@ internal static class SettingsRows
             RemoveRegistryEntries(controls);
         }
         if (removed > 0) MoreAspectRatiosMod.Log.Msg("Removed " + removed + " settings rows");
+    }
+
+    /// <summary>Drop references the controls hold to destroyed rows (and, with oursToo, to our live rows):
+    /// the dropdown instance lists and the cached selected / modal-previous element.</summary>
+    private static void ForgetRows(SettingsScreenControls controls, bool oursToo)
+    {
+        int dropped = 0;
+        var actual = controls.m_actualDropDownInstances;
+        if (actual != null)
+            for (int i = actual.Count - 1; i >= 0; i--)
+            {
+                var d = actual[i];
+                if (d == null || (oursToo && d.gameObject.name.StartsWith(Prefix))) { actual.RemoveAt(i); dropped++; }
+            }
+        var bound = controls.m_boundDropDownInstances;
+        if (bound != null)
+            for (int i = bound.Count - 1; i >= 0; i--)
+                if (bound[i] == null) { bound.RemoveAt(i); dropped++; }
+        if (IsDeadOrOurs(controls.m_cachedSelectedItemGUI, oursToo)) { controls.m_cachedSelectedItemGUI = null; dropped++; }
+        if (IsDeadOrOurs(controls.m_modalPreviousElement, oursToo)) { controls.m_modalPreviousElement = null; dropped++; }
+        if (dropped > 0) MoreAspectRatiosMod.Log.Msg("Dropped " + dropped + " settings-screen reference(s) to " + (oursToo ? "our rows" : "destroyed rows"));
+    }
+
+    private static bool IsDeadOrOurs(SettingsItemGUIBase? item, bool oursToo)
+    {
+        if (item is null) return false;                       // no reference at all
+        if (item == null) return true;                        // Unity-destroyed object
+        return oursToo && item.gameObject.name.StartsWith(Prefix);
     }
 
     private static RectTransform? DisplayContent(SettingsScreenControls controls)
