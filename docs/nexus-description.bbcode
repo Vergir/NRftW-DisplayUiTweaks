@@ -1,0 +1,63 @@
+[size=5][b]More Aspect Ratios[/b][/size]
+
+Play No Rest for the Wicked on any screen shape: ultrawide, 16:10, square, tall, and the Steam Deck. The mod unlocks the game's hidden display options and adds UI size and UI aspect settings to the game's own Options menu.
+
+[size=4][b]Features[/b][/size]
+[list]
+[*]Every resolution your display supports can be picked in Options > Display. The game hides anything narrower than 16:10 or wider than 32:9, and replaces such a saved resolution at every launch.
+[*]The UI Aspect Mode option is always shown (the game hides it on non-widescreen monitors), with all modes plus a new [b]Custom (More Aspect Ratios)[/b] mode.
+[*]No black 16:9 bars around the world on non-16:9 screens.
+[*]Menus shrink to fit the UI box instead of being cut off.
+[*]The bounty and challenge boards and the map's detail bar stay inside the UI box as well.
+[/list]
+
+New rows at the bottom of [b]Options > Display[/b]:
+[list]
+[*][b]HUD & Dialogue UI Size[/b] (10-150%): in-game HUD, overlays and dialogue.
+[*][b]Menu UI Size[/b] (10-150%): inventory, stats, map, settings and the other menus.
+[*][b]Custom UI Aspect Ratio[/b] (1.00-4.00): the width-to-height ratio the whole UI is kept in when UI Aspect Mode is "Custom (More Aspect Ratios)". 1.00 = square, 1.78 = 16:9, 2.33 = 21:9.
+[*][b]Box Bounty Boards & Map Details[/b] (On/Off).
+[/list]
+With the defaults on a 16:9 monitor the game looks exactly as before; the mod only adds options.
+
+[size=4][b]Examples[/b][/size]
+[list]
+[*][b]Ultrawide:[/b] set UI Aspect Mode to 16:9, or to Custom with any ratio, to keep the HUD and menus in the middle of the screen.
+[*][b]Square or tall monitor:[/b] pick your resolution, set UI Aspect Mode to Custom and Custom UI Aspect Ratio to 1.00, then adjust HUD & Dialogue UI Size to taste.
+[*][b]Steam Deck:[/b] works as is; use the size sliders if the text is too small.
+[/list]
+
+[size=4][b]Requirements[/b][/size]
+[list]
+[*][url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader[/url] 0.7.3 or newer.
+[/list]
+
+[size=4][b]Installation[/b][/size]
+[list=1]
+[*]Install MelonLoader into the game folder and start the game once.
+[*]Extract the mod's zip into the game folder, so that [i]MoreAspectRatios.dll[/i] ends up in the [i]Mods[/i] folder.
+[/list]
+
+[b]Steam Deck / Linux (Proton):[/b]
+[list=1]
+[*]Copy the files from MelonLoader's [i]MelonLoader.x64.zip[/i] (the Windows build) into the game folder, and the mod into [i]Mods[/i].
+[*]In Steam, open the game's Properties > General > Launch Options and enter: [code]WINEDLLOVERRIDES="version=n,b" %command%[/code]
+[*]Start the game. On the first start MelonLoader installs the .NET runtime it needs by itself; that start takes a minute or two.
+[/list]
+
+[size=4][b]Compatibility[/b][/size]
+[list]
+[*]Tested with game build 29466 and MelonLoader 0.7.3 on Windows and on a Steam Deck.
+[*]Display only: nothing in the game simulation or your save is changed, so it does not affect co-op.
+[*]All settings are also in [i]UserData/MelonPreferences.cfg[/i], section [MoreAspectRatios], including a switch for each feature.
+[/list]
+
+[size=4][b]Known limitations[/b][/size]
+[list]
+[*]The map itself and the fast-travel map stay full-screen; only the map's detail bar is boxed.
+[*]In Custom mode the inventory and community chest pick their compare-panel layout from the monitor's shape, as the game does for every mode except its own 16:9.
+[/list]
+
+[size=4][b]Source[/b][/size]
+Source code, changelog and issue tracker: GITHUB_URL
+License: MIT
