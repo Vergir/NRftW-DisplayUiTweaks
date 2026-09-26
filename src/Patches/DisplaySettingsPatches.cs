@@ -47,22 +47,34 @@ internal static class InitializeAvailableResolutionsPatch
                 }
             }
 
+            // The entry the game selected in ITS list (it may have just applied it via Screen.SetResolution).
             int before = oldRes != null ? oldRes.Count : 0;
+            int oldIndex = __instance.m_currentResolutionIndex;
+            int selW = Screen.width, selH = Screen.height;
+            if (oldRes != null && oldIndex >= 0 && oldIndex < oldRes.Count) { selW = oldRes[oldIndex].width; selH = oldRes[oldIndex].height; }
+
             var names = new Il2CppStringArray(list.Count);
             __instance.m_allowedResolutions.Clear();
+            int newIndex = -1;
             for (int i = 0; i < list.Count; i++)
             {
                 var r = list[i];
                 __instance.m_allowedResolutions.Add(r);
                 string ratio = DisplaySettingsTab.GetAspectRatio(new Vector2(r.width, r.height), 0.015f);
                 names[i] = string.Format(template, r.width, r.height, ratio);
+                if (r.width == selW && r.height == selH) newIndex = i;
             }
             __instance.m_resolutionNames = names;
+            if (newIndex < 0)
+                for (int i = 0; i < list.Count; i++)
+                    if (list[i].width == Screen.width && list[i].height == Screen.height) { newIndex = i; break; }
+            if (newIndex < 0) newIndex = list.Count - 1;
+            __instance.m_currentResolutionIndex = newIndex;
 
-            // Same two calls the original ends with: pick the current resolution's index and refresh the dropdown.
-            __instance.SetResolutionFromCurrentSettings(true);
+            // Only refresh the dropdown. SetResolutionFromCurrentSettings would re-apply m_allowedResolutions[index]
+            // through Screen.SetResolution, and the original already did that for the game's own selection.
             __instance.UpdateResolutionDropdownOptions();
-            MoreAspectRatiosMod.Log.Msg("Resolutions: " + before + " listed by the game -> " + list.Count + " available");
+            MoreAspectRatiosMod.Log.Msg("Resolutions: " + before + " listed by the game -> " + list.Count + " available, current " + names[newIndex]);
         }
         catch (System.Exception e)
         {

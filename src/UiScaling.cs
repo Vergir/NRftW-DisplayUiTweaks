@@ -86,50 +86,61 @@ internal static class UiScaling
         }
     }
 
-    /// <summary>Re-evaluate every PanelSettings asset. Restores the original mode when no fit is needed.</summary>
+    /// <summary>Re-evaluate every loaded PanelSettings asset. Assets that load later (activity / map screens) are caught
+    /// by the UIDocument.OnEnable postfix, which calls ApplyPanel for the document's settings.</summary>
     public static void ApplyPanels()
     {
-        int changed = 0, restored = 0;
-        var screen = new Vector2(Screen.width, Screen.height);
+        int found = 0, changed = 0, restored = 0;
         foreach (var p in Resources.FindObjectsOfTypeAll<PanelSettings>())
         {
-            if (p == null) continue;
-            int id = p.GetInstanceID();
-            bool known = _panelOriginals.TryGetValue(id, out var orig);
-            if (!known)
-            {
-                if (p.scaleMode != PanelScaleMode.ScaleWithScreenSize) continue;
-                orig = new PanelOriginal { Mode = p.scaleMode, Scale = p.scale };
-                _panelOriginals[id] = orig;
-            }
+            found++;
+            var r = ApplyPanel(p);
+            if (r > 0) changed++; else if (r < 0) restored++;
+        }
+        MoreAspectRatiosMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the HUD box, " + restored + " restored");
+    }
 
-            float? target = null;
-            if (Prefs.Enabled.Value && Prefs.FitPanelsToBox.Value)
-            {
-                float refW = p.referenceResolution.x;
-                if (refW > 0f)
-                {
-                    float game = GamePanelScale(p, screen);
-                    float fit = UiBox.GlobalBoxWidthPx() / refW;
-                    if (fit < game) target = fit;
-                }
-            }
+    /// <summary>Returns 1 when the panel was fitted, -1 when restored to the game's setting, 0 when untouched.</summary>
+    public static int ApplyPanel(PanelSettings p)
+    {
+        if (p == null) return 0;
+        var screen = new Vector2(Screen.width, Screen.height);
+        int id = p.GetInstanceID();
+        bool known = _panelOriginals.TryGetValue(id, out var orig);
+        if (!known)
+        {
+            if (p.scaleMode != PanelScaleMode.ScaleWithScreenSize) return 0;
+            orig = new PanelOriginal { Mode = p.scaleMode, Scale = p.scale };
+            _panelOriginals[id] = orig;
+        }
 
-            if (target.HasValue)
+        float? target = null;
+        if (Prefs.Enabled.Value && Prefs.FitPanelsToBox.Value)
+        {
+            float refW = p.referenceResolution.x;
+            if (refW > 0f)
             {
-                // ConstantPixelSize: ResolveScale returns 1/scale, i.e. 'scale' behaves like a uGUI scale factor.
-                p.scaleMode = PanelScaleMode.ConstantPixelSize;
-                p.scale = target.Value;
-                changed++;
-            }
-            else if (p.scaleMode != orig.Mode || !Mathf.Approximately(p.scale, orig.Scale))
-            {
-                p.scaleMode = orig.Mode;
-                p.scale = orig.Scale;
-                restored++;
+                float game = GamePanelScale(p, screen);
+                float fit = UiBox.GlobalBoxWidthPx() / refW;
+                if (fit < game) target = fit;
             }
         }
-        if (changed + restored > 0)
-            MoreAspectRatiosMod.Log.Msg("PanelSettings: " + changed + " fitted to the HUD box, " + restored + " restored");
+
+        if (target.HasValue)
+        {
+            if (p.scaleMode == PanelScaleMode.ConstantPixelSize && Mathf.Approximately(p.scale, target.Value)) return 0;
+            // ConstantPixelSize: ResolveScale returns 1/scale, i.e. 'scale' behaves like a uGUI scale factor.
+            p.scaleMode = PanelScaleMode.ConstantPixelSize;
+            p.scale = target.Value;
+            MoreAspectRatiosMod.Log.Msg("PanelSettings '" + p.name + "': scale " + target.Value.ToString("0.000") + " (fit to HUD box)");
+            return 1;
+        }
+        if (p.scaleMode != orig.Mode || !Mathf.Approximately(p.scale, orig.Scale))
+        {
+            p.scaleMode = orig.Mode;
+            p.scale = orig.Scale;
+            return -1;
+        }
+        return 0;
     }
 }

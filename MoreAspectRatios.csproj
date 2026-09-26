@@ -7,7 +7,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>MoreAspectRatios</AssemblyName>
     <RootNamespace>MoreAspectRatios</RootNamespace>
-    <Version>0.2.1</Version>
+    <Version>0.2.2</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <DebugType>portable</DebugType>
