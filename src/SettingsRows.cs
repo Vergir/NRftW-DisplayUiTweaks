@@ -48,12 +48,12 @@ internal static class SettingsRows
             if (items != null) { items.Remove(HudId); items.Remove(MenuId); items.Remove(BoxId); }
         }
 
-        _hudName ??= Message(HudId, "HUD Size");
+        _hudName ??= Message(HudId, "HUD & Dialogue UI Size");
         _hudDesc ??= Message(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue relative to the game's default (More Aspect Ratios mod).");
-        _menuName ??= Message(MenuId, "Menu Size");
+        _menuName ??= Message(MenuId, "Menu UI Size");
         _menuDesc ??= Message(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings) relative to the game's default, after they were shrunk to fit the HUD box (More Aspect Ratios mod).");
-        _boxName ??= Message(BoxId, "HUD Box Aspect");
-        _boxDesc ??= Message(BoxId + "_Desc", "Width-to-height ratio of the HUD box when UI Aspect is set to Custom (More Aspect Ratios). 1.00 = square, 1.78 = 16:9.");
+        _boxName ??= Message(BoxId, "Custom UI Aspect Ratio");
+        _boxDesc ??= Message(BoxId + "_Desc", "Width-to-height ratio the whole UI is kept in when UI Aspect is set to Custom (More Aspect Ratios). 1.00 = square, 1.78 = 16:9.");
 
         AddSlider(controls, content, _hudName, _hudDesc,
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.HudScalePercent.Value,
@@ -70,7 +70,7 @@ internal static class SettingsRows
             v => v.ToString("0.00"),
             v => { Prefs.UiBoxAspect.Value = Mathf.Round(v * 100f) / 100f; MoreAspectRatiosMod.OnLayoutPrefChanged(); });
 
-        MoreAspectRatiosMod.Log.Msg("Added HUD Size, Menu Size and HUD Box Aspect sliders to Options > Display");
+        MoreAspectRatiosMod.Log.Msg("Added HUD & Dialogue UI Size, Menu UI Size and Custom UI Aspect Ratio sliders to Options > Display");
     }
 
     private static void AddSlider(SettingsScreenControls controls, RectTransform? content, LocalizedMessage name, LocalizedMessage desc,

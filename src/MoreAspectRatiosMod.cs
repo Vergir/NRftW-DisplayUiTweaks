@@ -3,7 +3,7 @@ using MelonLoader;
 using MoreAspectRatios;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.2.3", "vergir")]
+[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.2.4", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
 namespace MoreAspectRatios;
@@ -14,7 +14,7 @@ namespace MoreAspectRatios;
 ///  - the 'UI aspect' option always available with all modes,
 ///  - no 16:9 letterbox on non-16:9 screens,
 ///  - menu canvases and UI Toolkit panels kept inside the HUD box,
-///  - HUD size and HUD box aspect sliders in Options > Display.
+///  - HUD & Dialogue UI Size, Menu UI Size and Custom UI Aspect Ratio sliders in Options > Display.
 /// Successor of the GameAssembly.dll byte patches (see repo README).
 /// </summary>
 public class MoreAspectRatiosMod : MelonMod

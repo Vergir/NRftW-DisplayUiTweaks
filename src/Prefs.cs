@@ -41,7 +41,7 @@ internal static class Prefs
         MenuScalePercent = _cat.CreateEntry("MenuScalePercent", 100f,
             description: "Menus (inventory, stats, map, settings...; fallback DPI 221.5 and UI Toolkit panels): scale relative to the game's own, after the fit-to-box cap (10-150). Also a slider in Options > Display.");
         UiBoxAspect = _cat.CreateEntry("UiBoxAspect", GameDefaultUiBoxAspect,
-            description: "Aspect ratio of the HUD box for the 'Custom (More Aspect Ratios)' UI aspect mode (1.00-4.00). Also a slider in Options > Display.");
+            description: "Aspect ratio the whole UI is boxed to in the 'Custom (More Aspect Ratios)' UI aspect mode (1.00-4.00, 1.78 = 16:9). Also a slider in Options > Display.");
         FitMenusToBox = _cat.CreateEntry("FitMenusToBox", true,
             description: "Scale menu canvases down so their 1920px reference width fits inside the HUD box.");
         FitPanelsToBox = _cat.CreateEntry("FitPanelsToBox", true,
