@@ -32,13 +32,13 @@ internal static class Prefs
         UnlockResolutions = _cat.CreateEntry("UnlockResolutions", true,
             description: "List every resolution the display supports in Options > Display (the game hides anything narrower than 16:10 or wider than 32:9).");
         UnlockUiAspectModes = _cat.CreateEntry("UnlockUiAspectModes", true,
-            description: "Always show the 'UI aspect' option with all modes (the game hides it on non-widescreen monitors).");
+            description: "Always show the 'UI aspect' option with all modes plus 'Custom (More Aspect Ratios)' (the game hides the option on non-widescreen monitors).");
         DisableLetterbox = _cat.CreateEntry("DisableLetterbox", true,
             description: "Let the world fill the screen on non-16:9 displays (MoonRenderPipelineAsset.Enforce169Aspect = Never).");
         HudScalePercent = _cat.CreateEntry("HudScalePercent", 100f,
             description: "HUD/overlay canvas scale relative to the game's own scale (10-150). Also a slider in Options > Display.");
         UiBoxAspect = _cat.CreateEntry("UiBoxAspect", GameDefaultUiBoxAspect,
-            description: "Aspect ratio of the HUD box used by the '16:9' UI aspect mode (1.00-4.00, game default 1.78). Also a slider in Options > Display.");
+            description: "Aspect ratio of the HUD box for the 'Custom (More Aspect Ratios)' UI aspect mode (1.00-4.00). Also a slider in Options > Display.");
         FitMenusToBox = _cat.CreateEntry("FitMenusToBox", true,
             description: "Scale menu canvases down so their 1920px reference width fits inside the HUD box.");
         FitPanelsToBox = _cat.CreateEntry("FitPanelsToBox", true,

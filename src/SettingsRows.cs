@@ -22,7 +22,7 @@ internal static class SettingsRows
         _hudName ??= Message("MAR_HudScale", "HUD Size");
         _hudDesc ??= Message("MAR_HudScale_Desc", "Scale of the in-game HUD relative to the game's default (More Aspect Ratios mod).");
         _boxName ??= Message("MAR_BoxAspect", "HUD Box Aspect");
-        _boxDesc ??= Message("MAR_BoxAspect_Desc", "Width-to-height ratio of the box the HUD is kept in when UI Aspect is not Native. 1.00 = square, 1.78 = 16:9 (More Aspect Ratios mod).");
+        _boxDesc ??= Message("MAR_BoxAspect_Desc", "Width-to-height ratio of the HUD box when UI Aspect is set to Custom (More Aspect Ratios). 1.00 = square, 1.78 = 16:9.");
 
         AddSlider(controls, _hudName, _hudDesc,
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.HudScalePercent.Value,

@@ -71,6 +71,51 @@ internal static class InitializeAvailableResolutionsPatch
     }
 }
 
+/// <summary>
+/// Adds the game's own (otherwise unreachable) "Custom" UI aspect mode to the dropdown, labelled for the mod. Our
+/// ApplyConstraint replacement maps that mode to the HUD Box Aspect slider. Runs before Initialize builds the dropdown
+/// from m_allowedUIAspectModes / m_uiAspectModeNames.
+/// </summary>
+[HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.InitializeUIAspectModes))]
+internal static class InitializeUIAspectModesPatch
+{
+    public const string CustomModeLabel = "Custom (More Aspect Ratios)";
+
+    static void Postfix(DisplaySettingsTab __instance)
+    {
+        if (!Prefs.Enabled.Value || !Prefs.UnlockUiAspectModes.Value) return;
+        try
+        {
+            var modes = __instance.m_allowedUIAspectModes;
+            var names = __instance.m_uiAspectModeNames;
+            if (modes == null || names == null) return;
+
+            if (!modes.Contains(UIAspectMode.Custom))
+            {
+                modes.Add(UIAspectMode.Custom);
+                var newNames = new Il2CppStringArray(names.Length + 1);
+                for (int i = 0; i < names.Length; i++) newNames[i] = names[i];
+                newNames[names.Length] = CustomModeLabel;
+                __instance.m_uiAspectModeNames = newNames;
+            }
+            else
+            {
+                int idx = modes.IndexOf(UIAspectMode.Custom);
+                if (idx >= 0 && idx < names.Length) names[idx] = CustomModeLabel;
+            }
+
+            if (UIAspectConstraint.s_globalMode == UIAspectMode.Custom)
+                __instance.m_currentUIAspectModeIndex = modes.IndexOf(UIAspectMode.Custom);
+
+            MoreAspectRatiosMod.Log.Msg("UI aspect modes: " + modes.Count + " (current index " + __instance.m_currentUIAspectModeIndex + ")");
+        }
+        catch (System.Exception e)
+        {
+            MoreAspectRatiosMod.Log.Error("UI aspect mode unlock failed: " + e);
+        }
+    }
+}
+
 /// <summary>Adds our sliders to the Display tab once the game has built it.</summary>
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.Initialize))]
 internal static class DisplaySettingsTabInitializePatch

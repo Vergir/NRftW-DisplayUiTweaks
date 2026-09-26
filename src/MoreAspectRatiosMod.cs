@@ -3,7 +3,7 @@ using MelonLoader;
 using MoreAspectRatios;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.2.0", "vergir")]
+[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.2.1", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
 namespace MoreAspectRatios;

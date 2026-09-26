@@ -4,9 +4,10 @@ using UnityEngine;
 namespace MoreAspectRatios;
 
 /// <summary>
-/// The HUD box: UIAspectConstraint fits the HUD root into a box of a given aspect (game modes: Native = stretch,
-/// 16:9 / 21:9 / 32:9 / Custom). We replace ApplyConstraint so the '16:9' mode uses the user's box aspect instead
-/// of 1.7778, and so screens with a fixed-size root are stretched rather than boxed.
+/// The HUD box: UIAspectConstraint fits the HUD root into a box of a given aspect. Game modes: Native = stretch to the
+/// screen, 16:9 / 21:9 / 32:9 = fixed boxes, Custom = per-instance aspect the game never exposes in the UI.
+/// We give "Custom" a meaning: the HUD Box Aspect slider. The other modes keep the game's values.
+/// We also stretch constraints whose parent is not screen-shaped (fixed-size roots) instead of boxing them.
 ///
 /// C# transcription of the original ApplyConstraint (build 29466, RVA 0x8C22FC0):
 ///   parent = GetParentSize(); if (parent.x <= 0 || parent.y <= 0) return;
@@ -19,25 +20,26 @@ namespace MoreAspectRatios;
 /// </summary>
 internal static class UiBox
 {
+    private const float Aspect16x9 = 1.7777778f;
     private const float Aspect21x9 = 2.3333333f;
     private const float Aspect32x9 = 3.5555556f;
 
     /// <summary>Aspect of the box for a mode, or 0 for Native (no box).</summary>
-    public static float TargetAspect(UIAspectMode mode, Vector2Int custom)
+    public static float TargetAspect(UIAspectMode mode)
     {
         switch (mode)
         {
             case UIAspectMode.Native:     return 0f;
-            case UIAspectMode.Aspect16x9: return Prefs.BoxAspect;   // game: 1.7777778
+            case UIAspectMode.Aspect16x9: return Aspect16x9;
             case UIAspectMode.Aspect21x9: return Aspect21x9;
             case UIAspectMode.Aspect32x9: return Aspect32x9;
-            case UIAspectMode.Custom:     return custom.y != 0 ? (float)custom.x / custom.y : Prefs.BoxAspect;
-            default:                      return Prefs.BoxAspect;
+            case UIAspectMode.Custom:     return Prefs.BoxAspect;
+            default:                      return Aspect16x9;
         }
     }
 
     /// <summary>Aspect of the global HUD box (0 = Native / whole screen).</summary>
-    public static float GlobalBoxAspect() => TargetAspect(UIAspectConstraint.s_globalMode, Vector2Int.zero);
+    public static float GlobalBoxAspect() => TargetAspect(UIAspectConstraint.s_globalMode);
 
     /// <summary>Width in screen pixels of the global HUD box (whole screen when Native or when the box is wider than the screen).</summary>
     public static float GlobalBoxWidthPx()
@@ -66,7 +68,7 @@ internal static class UiBox
 
         RectTransform rt = c.m_rectTransform;
         float w, h;
-        float target = TargetAspect(mode, c.m_customAspect);
+        float target = TargetAspect(mode);
         if (target <= 0f)
         {
             if (rt != null) UIAspectConstraint.ApplyStretchToParent(rt);
