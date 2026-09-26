@@ -57,21 +57,21 @@ internal static class SettingsRows
 
         AddSlider(controls, content, HudId,
             Msg(HudId, "HUD & Dialogue UI Size"),
-            Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue relative to the game's default (More Aspect Ratios mod)."),
+            Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue (More Aspect Ratios)."),
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.HudScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
             v => { Prefs.HudScalePercent.Value = Mathf.Round(v); MoreAspectRatiosMod.OnLayoutPrefChanged(); });
 
         AddSlider(controls, content, MenuId,
             Msg(MenuId, "Menu UI Size"),
-            Msg(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings) relative to the game's default, after they were shrunk to fit the UI box (More Aspect Ratios mod)."),
+            Msg(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings) (More Aspect Ratios)."),
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.MenuScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
             v => { Prefs.MenuScalePercent.Value = Mathf.Round(v); MoreAspectRatiosMod.OnLayoutPrefChanged(); });
 
         AddSlider(controls, content, BoxId,
             Msg(BoxId, "Custom UI Aspect Ratio"),
-            Msg(BoxId + "_Desc", "Width-to-height ratio the whole UI is kept in when UI Aspect is set to Custom (More Aspect Ratios). 1.00 = square, 1.78 = 16:9."),
+            Msg(BoxId + "_Desc", "Width-to-height ratio the whole UI is kept in when UI Aspect is set to Custom (More Aspect Ratios), 1.78 = 16:9, 3.0 = 27:9."),
             Prefs.UiBoxAspectMin, Prefs.UiBoxAspectMax, Prefs.UiBoxAspectStep, Prefs.UiBoxAspect.Value,
             v => v.ToString("0.00"),
             v => { Prefs.UiBoxAspect.Value = Mathf.Round(v * 100f) / 100f; MoreAspectRatiosMod.OnLayoutPrefChanged(); });

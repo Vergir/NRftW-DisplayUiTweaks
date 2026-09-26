@@ -11,7 +11,10 @@ namespace MoreAspectRatios.Patches;
 /// on its own). Worse, when the saved resolution is not in that list the original applies AND saves a fallback from it
 /// through SetResolutionFromCurrentSettings, which is how a 9:8 player ends up at 1680x1050 after every launch.
 /// So: while the original runs, SetResolutionFromCurrentSettings is suppressed; afterwards the list is rebuilt from
-/// every mode the display reports, the index is recomputed, and the (now harmless) apply is done with the full list.
+/// every mode the display reports and the entry is chosen from the SAVED resolution (the game's intent), falling back to
+/// the running window size. The saved resolution is applied only when the window differs from it: that restores e.g. a
+/// Steam Deck whose Unity window prefs say 800x800 while the game's own setting says 1280x800, and it never touches a
+/// window size that is not in the list (SetResolutionFromCurrentSettings would treat that as "custom" anyway).
 /// </summary>
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.InitializeAvailableResolutions))]
 internal static class InitializeAvailableResolutionsPatch
@@ -59,25 +62,36 @@ internal static class InitializeAvailableResolutionsPatch
             }
 
             int before = oldRes != null ? oldRes.Count : 0;
+            int savedW = 0, savedH = 0;
+            var device = Core.SettingsData?.Device;
+            if (device != null) { savedW = device.Resolution.Width; savedH = device.Resolution.Height; }
+
             var names = new Il2CppStringArray(list.Count);
             __instance.m_allowedResolutions.Clear();
-            int newIndex = -1;
+            int savedIndex = -1, screenIndex = -1;
             for (int i = 0; i < list.Count; i++)
             {
                 var r = list[i];
                 __instance.m_allowedResolutions.Add(r);
                 string ratio = DisplaySettingsTab.GetAspectRatio(new Vector2(r.width, r.height), 0.015f);
                 names[i] = string.Format(template, r.width, r.height, ratio);
-                if (r.width == Screen.width && r.height == Screen.height) newIndex = i;
+                if (r.width == savedW && r.height == savedH) savedIndex = i;
+                if (r.width == Screen.width && r.height == Screen.height) screenIndex = i;
             }
             __instance.m_resolutionNames = names;
-            if (newIndex < 0) newIndex = list.Count - 1;
+            int newIndex = savedIndex >= 0 ? savedIndex : screenIndex >= 0 ? screenIndex : list.Count - 1;
             __instance.m_currentResolutionIndex = newIndex;
 
-            // Same two calls the original ends with, now against the full list (the selected entry is the running one).
-            __instance.SetResolutionFromCurrentSettings(true);
+            bool windowDiffers = savedIndex >= 0 && (Screen.width != savedW || Screen.height != savedH);
+            if (windowDiffers)
+            {
+                // Apply (and save) the game's own saved resolution, now that it is in the list.
+                __instance.SetResolutionFromCurrentSettings(false);
+                MoreAspectRatiosMod.Log.Msg("Window was " + Screen.width + "x" + Screen.height + ", applied the saved resolution " + savedW + "x" + savedH);
+            }
             __instance.UpdateResolutionDropdownOptions();
-            MoreAspectRatiosMod.Log.Msg("Resolutions: " + before + " listed by the game -> " + list.Count + " available, current " + names[newIndex]);
+            MoreAspectRatiosMod.Log.Msg("Resolutions: " + before + " listed by the game -> " + list.Count + " available, selected " + names[newIndex]
+                + " (saved " + savedW + "x" + savedH + ", window " + Screen.width + "x" + Screen.height + ")");
         }
         catch (System.Exception e)
         {
@@ -93,7 +107,7 @@ internal static class SetResolutionFromCurrentSettingsPatch
     static bool Prefix()
     {
         if (!InitializeAvailableResolutionsPatch.SuppressApply) return true;
-        MoreAspectRatiosMod.Log.Msg("Suppressed the game's resolution fallback (saved resolution not in its list)");
+        MoreAspectRatiosMod.Log.Msg("Deferred the game's resolution apply until the full resolution list is built");
         return false;
     }
 }
