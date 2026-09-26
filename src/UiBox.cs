@@ -6,11 +6,8 @@ namespace MoreAspectRatios;
 /// <summary>
 /// The UI box: UIAspectConstraint fits the UI root into a box of a given aspect. Game modes: Native = stretch to the
 /// screen, 16:9 / 21:9 / 32:9 = fixed boxes, Custom = per-instance aspect the game never exposes in the UI.
-/// We give "Custom" a meaning (the Custom UI Aspect Ratio slider), add edge margins in every mode, and stretch
-/// constraints whose parent is not screen-shaped (fixed-size roots) instead of boxing them.
-///
-/// Margins and aspect combine like this: the margins cut the available area out of the parent (screen), then the
-/// aspect box is fitted inside that area. Native mode with margins = the whole available area.
+/// We give "Custom" a meaning (the Custom UI Aspect Ratio slider) and stretch constraints whose parent is not
+/// screen-shaped (fixed-size roots) instead of boxing them.
 ///
 /// C# transcription of the original ApplyConstraint (build 29466, RVA 0x8C22FC0):
 ///   parent = GetParentSize(); if (parent.x <= 0 || parent.y <= 0) return;
@@ -41,25 +38,19 @@ internal static class UiBox
         }
     }
 
-    /// <summary>The box (w, h) for a parent of the given size: margins first, then the aspect fit.</summary>
-    public static Vector2 FitBox(Vector2 parent, float targetAspect, bool withMargins)
+    /// <summary>The largest box of the target aspect inside a parent of the given size (the parent itself when 0 = Native).</summary>
+    public static Vector2 FitBox(Vector2 parent, float targetAspect)
     {
-        float availW = parent.x, availH = parent.y;
-        if (withMargins)
-        {
-            availW *= 1f - 2f * Prefs.MarginX;
-            availH *= 1f - 2f * Prefs.MarginY;
-        }
-        if (targetAspect <= 0f) return new Vector2(availW, availH);
-        if (availW / availH > targetAspect) return new Vector2(availH * targetAspect, availH);
-        return new Vector2(availW, availW / targetAspect);
+        if (targetAspect <= 0f) return parent;
+        if (parent.x / parent.y > targetAspect) return new Vector2(parent.y * targetAspect, parent.y);
+        return new Vector2(parent.x, parent.x / targetAspect);
     }
 
-    /// <summary>Size in screen pixels of the global UI box (the whole screen when Native and no margins).</summary>
+    /// <summary>Size in screen pixels of the global UI box (the whole screen when Native).</summary>
     public static Vector2 GlobalBoxSizePx()
     {
         var screen = new Vector2(Screen.width, Screen.height);
-        return FitBox(screen, TargetAspect(UIAspectConstraint.s_globalMode), true);
+        return FitBox(screen, TargetAspect(UIAspectConstraint.s_globalMode));
     }
 
     /// <summary>True when the global UI does not cover the whole screen.</summary>
@@ -76,28 +67,27 @@ internal static class UiBox
         if (parent.x <= 0f || parent.y <= 0f) return;
 
         UIAspectMode mode = (c.m_useGlobalMode && Application.isPlaying) ? UIAspectConstraint.s_globalMode : c.m_mode;
-        bool withMargins = true;
 
         // A constraint whose parent does not have the screen's aspect sits under a fixed-size root (1920x1080 in this game:
         // scribe table, inspect player). Boxing those crops their content, so stretch to the root instead.
-        if (Prefs.StretchMismatchedRoots.Value && (mode != UIAspectMode.Native || Prefs.HasMargins))
+        if (Prefs.StretchMismatchedRoots.Value && mode != UIAspectMode.Native)
         {
             float screenAspect = (float)Screen.width / Screen.height;
             float parentAspect = parent.x / parent.y;
-            if (Mathf.Abs(parentAspect - screenAspect) > 0.02f) { mode = UIAspectMode.Native; withMargins = false; }
+            if (Mathf.Abs(parentAspect - screenAspect) > 0.02f) mode = UIAspectMode.Native;
         }
 
         RectTransform rt = c.m_rectTransform;
         float target = TargetAspect(mode);
         Vector2 box;
-        if (target <= 0f && !(withMargins && Prefs.HasMargins))
+        if (target <= 0f)
         {
             if (rt != null) UIAspectConstraint.ApplyStretchToParent(rt);
             box = parent;
         }
         else
         {
-            box = FitBox(parent, target, withMargins);
+            box = FitBox(parent, target);
             if (rt != null)
             {
                 var half = new Vector2(0.5f, 0.5f);

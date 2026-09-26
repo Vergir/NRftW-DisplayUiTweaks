@@ -3,7 +3,7 @@ using MelonLoader;
 using MoreAspectRatios;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.3.0", "vergir")]
+[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.3.1", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
 namespace MoreAspectRatios;
@@ -14,7 +14,7 @@ namespace MoreAspectRatios;
 ///  - the 'UI aspect' option always available with all modes,
 ///  - no 16:9 letterbox on non-16:9 screens,
 ///  - menu canvases and UI Toolkit screens (bounty/challenge boards, map details) kept inside the UI box,
-///  - HUD & Dialogue UI Size, Menu UI Size, Custom UI Aspect Ratio and UI Edge Margin rows in Options > Display.
+///  - HUD & Dialogue UI Size, Menu UI Size, Custom UI Aspect Ratio and 'Box Bounty Boards & Map Details' rows in Options > Display.
 /// Successor of the GameAssembly.dll byte patches (see repo README).
 /// </summary>
 public class MoreAspectRatiosMod : MelonMod
@@ -50,6 +50,12 @@ public class MoreAspectRatiosMod : MelonMod
         // After a hot reload the game is already running: re-apply to what is on screen now.
         try { UiBox.ReapplyAllConstraints(); ApplyEverything("init"); }
         catch (System.Exception e) { LoggerInstance.Warning("Initial apply: " + e.Message); }
+        // The game builds its settings screens once per session, so after a hot reload they have to be given our rows here.
+        if (Prefs.AddSettingsRows.Value)
+        {
+            try { SettingsRows.AddToLiveScreens(); }
+            catch (System.Exception e) { LoggerInstance.Warning("Adding rows to live settings screens: " + e.Message); }
+        }
     }
 
     /// <summary>Hot reload / unload: give the game back what is not a Harmony patch. The pipeline flag and the debug

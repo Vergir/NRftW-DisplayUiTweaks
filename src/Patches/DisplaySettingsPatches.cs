@@ -173,6 +173,7 @@ internal static class DisplaySettingsTabInitializePatch
 {
     static void Postfix(DisplaySettingsTab __instance)
     {
+        MoreAspectRatiosMod.Log.Msg("Display settings tab initialized by the game");
         if (!Prefs.Enabled.Value || !Prefs.AddSettingsRows.Value) return;
         try { SettingsRows.AddTo(__instance); }
         catch (System.Exception e) { MoreAspectRatiosMod.Log.Error("Adding settings rows failed: " + e); }

@@ -3,12 +3,11 @@ using MelonLoader;
 namespace MoreAspectRatios;
 
 /// <summary>All user-tunable values. Stored in UserData/MelonPreferences.cfg under [MoreAspectRatios].
-/// The sizes, the custom aspect, the edge margins and the layout switch are also rows in Options > Display.</summary>
+/// The sizes, the custom aspect and the UI Toolkit box switch are also rows in Options > Display.</summary>
 internal static class Prefs
 {
     public const float HudScaleMin = 10f, HudScaleMax = 150f, HudScaleStep = 1f;
     public const float UiBoxAspectMin = 1.0f, UiBoxAspectMax = 4.0f, UiBoxAspectStep = 0.01f;
-    public const float MarginMin = 0f, MarginMax = 25f, MarginStep = 0.5f;
     public const float GameDefaultUiBoxAspect = 16f / 9f;
 
     private static MelonPreferences_Category _cat = null!;
@@ -21,12 +20,9 @@ internal static class Prefs
     public static MelonPreferences_Entry<bool> FitPanelsToBox = null!;
     public static MelonPreferences_Entry<bool> BoxUiToolkitScreens = null!;
     public static MelonPreferences_Entry<bool> StretchMismatchedRoots = null!;
-    public static MelonPreferences_Entry<bool> CustomModeUses16x9Layouts = null!;
     public static MelonPreferences_Entry<float> HudScalePercent = null!;
     public static MelonPreferences_Entry<float> MenuScalePercent = null!;
     public static MelonPreferences_Entry<float> UiBoxAspect = null!;
-    public static MelonPreferences_Entry<float> UiMarginXPercent = null!;
-    public static MelonPreferences_Entry<float> UiMarginYPercent = null!;
     public static MelonPreferences_Entry<float> MenuDpiThreshold = null!;
     public static MelonPreferences_Entry<bool> AddSettingsRows = null!;
 
@@ -47,18 +43,12 @@ internal static class Prefs
             description: "Menus (inventory, stats, map, settings...; fallback DPI 221.5 and UI Toolkit panels): scale relative to the game's own, after the fit-to-box cap (10-150). Also a slider in Options > Display.");
         UiBoxAspect = _cat.CreateEntry("UiBoxAspect", GameDefaultUiBoxAspect,
             description: "Aspect ratio the whole UI is boxed to in the 'Custom (More Aspect Ratios)' UI aspect mode (1.00-4.00, 1.78 = 16:9). Also a slider in Options > Display.");
-        UiMarginXPercent = _cat.CreateEntry("UiMarginXPercent", 0f,
-            description: "Empty space kept at the left and right screen edges, in percent of the screen width per side (0-25). The UI box is fitted inside the remaining area. Works in every UI aspect mode. Also a slider in Options > Display.");
-        UiMarginYPercent = _cat.CreateEntry("UiMarginYPercent", 0f,
-            description: "Same for the top and bottom edges, in percent of the screen height per side (0-25). Also a slider in Options > Display.");
-        CustomModeUses16x9Layouts = _cat.CreateEntry("CustomModeUses16x9Layouts", false,
-            description: "In Custom UI aspect mode, let the inventory and community chest use their 16:9 layout (the one the game uses for its own 16:9 UI aspect mode) instead of picking a layout from the monitor's shape. Also a row in Options > Display.");
         FitMenusToBox = _cat.CreateEntry("FitMenusToBox", true,
             description: "Scale menu canvases down so their 1920x1080 reference size fits inside the UI box.");
         FitPanelsToBox = _cat.CreateEntry("FitPanelsToBox", true,
             description: "Same for UI Toolkit panels (map, fast travel, bounty and challenge boards).");
         BoxUiToolkitScreens = _cat.CreateEntry("BoxUiToolkitScreens", true,
-            description: "Keep the bounty/challenge boards and the map's detail bar inside the UI box (the game's UI aspect option does not box UI Toolkit screens).");
+            description: "Keep the bounty/challenge boards and the map's detail bar inside the UI box (the game's UI aspect option only boxes parts of these UI Toolkit screens). Also a row in Options > Display.");
         StretchMismatchedRoots = _cat.CreateEntry("StretchMismatchedRoots", true,
             description: "Screens with a fixed-size root (scribe table, inspect player) are stretched to that root instead of boxed, so their content is not cut off.");
         MenuDpiThreshold = _cat.CreateEntry("MenuDpiThreshold", 100f,
@@ -72,10 +62,6 @@ internal static class Prefs
     public static float HudScale => Clamp(HudScalePercent.Value, HudScaleMin, HudScaleMax) / 100f;
     public static float MenuScale => Clamp(MenuScalePercent.Value, HudScaleMin, HudScaleMax) / 100f;
     public static float BoxAspect => Clamp(UiBoxAspect.Value, UiBoxAspectMin, UiBoxAspectMax);
-    /// <summary>Margin per side as a fraction (0..0.25).</summary>
-    public static float MarginX => Clamp(UiMarginXPercent.Value, MarginMin, MarginMax) / 100f;
-    public static float MarginY => Clamp(UiMarginYPercent.Value, MarginMin, MarginMax) / 100f;
-    public static bool HasMargins => MarginX > 0f || MarginY > 0f;
 
     private static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;
 }
