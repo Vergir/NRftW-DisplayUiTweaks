@@ -14,3 +14,20 @@ internal static class ApplyConstraintPatch
         return false;
     }
 }
+
+/// <summary>The UI Aspect dropdown (and our own re-apply) go through SetGlobalMode. The uGUI boxes follow by
+/// themselves; UI Toolkit panels and boxes are ours to update.</summary>
+[HarmonyPatch(typeof(UIAspectConstraint), nameof(UIAspectConstraint.SetGlobalMode))]
+internal static class SetGlobalModePatch
+{
+    static void Postfix()
+    {
+        if (!Prefs.Enabled.Value) return;
+        try
+        {
+            UiScaling.ApplyPanels();
+            UiToolkitBoxing.ApplyAll();
+        }
+        catch (System.Exception e) { MoreAspectRatiosMod.Log.Warning("SetGlobalMode postfix: " + e.Message); }
+    }
+}

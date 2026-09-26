@@ -55,20 +55,30 @@ internal static class UiScaling
             return Mathf.Approximately(hud, 1f) ? null : game * hud;
         }
 
-        float target = MenuTarget(game, s.referenceResolution.x);
+        float target = MenuTarget(game, s.referenceResolution);
         return Mathf.Approximately(target, game) ? null : target;
     }
 
     /// <summary>Menu scale: the game's value, capped so the reference width fits the HUD box, times the Menu Size slider.</summary>
-    private static float MenuTarget(float game, float refW)
+    private static float MenuTarget(float game, Vector2 refRes)
     {
         float target = game;
-        if (Prefs.FitMenusToBox.Value && refW > 0f)
+        if (Prefs.FitMenusToBox.Value)
         {
-            float fit = UiBox.GlobalBoxWidthPx() / refW;
+            float fit = FitScale(refRes);
             if (fit < target) target = fit;
         }
         return target * Prefs.MenuScale;
+    }
+
+    /// <summary>Largest scale at which a reference-size layout still fits inside the UI box (width and height).</summary>
+    public static float FitScale(Vector2 refRes)
+    {
+        Vector2 box = UiBox.GlobalBoxSizePx();
+        float fit = float.MaxValue;
+        if (refRes.x > 0f) fit = Mathf.Min(fit, box.x / refRes.x);
+        if (refRes.y > 0f) fit = Mathf.Min(fit, box.y / refRes.y);
+        return fit == float.MaxValue ? 1f : fit;
     }
 
     // ---- UI Toolkit -------------------------------------------------------------------------------------------
@@ -106,7 +116,8 @@ internal static class UiScaling
             var r = ApplyPanel(p);
             if (r > 0) changed++; else if (r < 0) restored++;
         }
-        MoreAspectRatiosMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the HUD box, " + restored + " restored");
+        if (changed + restored > 0)
+            MoreAspectRatiosMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the UI box, " + restored + " restored");
     }
 
     /// <summary>Put every panel we touched back to the game's settings (hot reload / mod unload).</summary>
@@ -138,12 +149,12 @@ internal static class UiScaling
         float? target = null;
         if (Prefs.Enabled.Value)
         {
-            float refW = p.referenceResolution.x;
             float game = GamePanelScale(p, screen);
             float t = game;
-            if (Prefs.FitPanelsToBox.Value && refW > 0f)
+            if (Prefs.FitPanelsToBox.Value)
             {
-                float fit = UiBox.GlobalBoxWidthPx() / refW;
+                var rr = p.referenceResolution;
+                float fit = FitScale(new Vector2(rr.x, rr.y));
                 if (fit < t) t = fit;
             }
             t *= Prefs.MenuScale;
@@ -156,7 +167,7 @@ internal static class UiScaling
             // ConstantPixelSize: ResolveScale returns 1/scale, i.e. 'scale' behaves like a uGUI scale factor.
             p.scaleMode = PanelScaleMode.ConstantPixelSize;
             p.scale = target.Value;
-            MoreAspectRatiosMod.Log.Msg("PanelSettings '" + p.name + "': scale " + target.Value.ToString("0.000") + " (fit to HUD box)");
+            MoreAspectRatiosMod.Log.Msg("PanelSettings '" + p.name + "': scale " + target.Value.ToString("0.000") + " (fit to UI box, Menu UI Size applied)");
             return 1;
         }
         if (p.scaleMode != orig.Mode || !Mathf.Approximately(p.scale, orig.Scale))

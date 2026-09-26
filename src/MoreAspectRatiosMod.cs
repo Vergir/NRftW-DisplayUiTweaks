@@ -3,7 +3,7 @@ using MelonLoader;
 using MoreAspectRatios;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.2.4", "vergir")]
+[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "0.3.0", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
 namespace MoreAspectRatios;
@@ -13,8 +13,8 @@ namespace MoreAspectRatios;
 ///  - every display resolution selectable in Options > Display,
 ///  - the 'UI aspect' option always available with all modes,
 ///  - no 16:9 letterbox on non-16:9 screens,
-///  - menu canvases and UI Toolkit panels kept inside the HUD box,
-///  - HUD & Dialogue UI Size, Menu UI Size and Custom UI Aspect Ratio sliders in Options > Display.
+///  - menu canvases and UI Toolkit screens (bounty/challenge boards, map details) kept inside the UI box,
+///  - HUD & Dialogue UI Size, Menu UI Size, Custom UI Aspect Ratio and UI Edge Margin rows in Options > Display.
 /// Successor of the GameAssembly.dll byte patches (see repo README).
 /// </summary>
 public class MoreAspectRatiosMod : MelonMod
@@ -23,6 +23,9 @@ public class MoreAspectRatiosMod : MelonMod
     public static MelonLogger.Instance Log => Instance.LoggerInstance;
 
     private int _lastW, _lastH;
+    private static string? _pendingReason;
+    private static float _applyAt;
+    private const float SceneApplyDelay = 0.5f;   // the world streams many additive scenes; apply once per burst
 
     public override void OnInitializeMelon()
     {
@@ -43,20 +46,32 @@ public class MoreAspectRatiosMod : MelonMod
 
         HarmonyInstance.PatchAll(typeof(MoreAspectRatiosMod).Assembly);
         LoggerInstance.Msg("Patches applied.");
+
+        // After a hot reload the game is already running: re-apply to what is on screen now.
+        try { UiBox.ReapplyAllConstraints(); ApplyEverything("init"); }
+        catch (System.Exception e) { LoggerInstance.Warning("Initial apply: " + e.Message); }
     }
 
     /// <summary>Hot reload / unload: give the game back what is not a Harmony patch. The pipeline flag and the debug
-    /// switches are left as they are (harmless, and the next build sets them again).</summary>
+    /// switches are left as they are (harmless, and the next build sets them again). UIAspectConstraint layouts are
+    /// re-applied by the new build (or by the game's own ApplyConstraint once our prefix is gone).</summary>
     public override void OnDeinitializeMelon()
     {
         try { UiScaling.RestorePanels(); }
         catch (System.Exception e) { LoggerInstance.Warning("RestorePanels: " + e.Message); }
+        try { UiToolkitBoxing.RestoreAll(); }
+        catch (System.Exception e) { LoggerInstance.Warning("UiToolkitBoxing.RestoreAll: " + e.Message); }
+        try { SettingsRows.RemoveAll(); }
+        catch (System.Exception e) { LoggerInstance.Warning("SettingsRows.RemoveAll: " + e.Message); }
+        try { UiBox.ReapplyAllConstraints(); }
+        catch (System.Exception e) { LoggerInstance.Warning("ReapplyAllConstraints: " + e.Message); }
     }
 
     public override void OnSceneWasLoaded(int buildIndex, string sceneName)
     {
         if (!Prefs.Enabled.Value) return;
-        ApplyEverything("scene " + sceneName);
+        _pendingReason = "scene " + sceneName;
+        _applyAt = Time.unscaledTime + SceneApplyDelay;
     }
 
     public override void OnUpdate()
@@ -65,24 +80,31 @@ public class MoreAspectRatiosMod : MelonMod
         if (Screen.width != _lastW || Screen.height != _lastH)
         {
             _lastW = Screen.width; _lastH = Screen.height;
+            _pendingReason = null;
             ApplyEverything("resolution " + _lastW + "x" + _lastH);
+        }
+        else if (_pendingReason != null && Time.unscaledTime >= _applyAt)
+        {
+            string reason = _pendingReason;
+            _pendingReason = null;
+            ApplyEverything(reason);
         }
     }
 
     /// <summary>Everything that is not a Harmony hook: pipeline flag and UI Toolkit panels. Cheap, safe to repeat.</summary>
     public static void ApplyEverything(string reason)
     {
-        Log.Msg("Applying (" + reason + ")");
+        if (!reason.StartsWith("scene")) Log.Msg("Applying (" + reason + ")");
         RenderPipelineTweaks.Apply();
         UiScaling.ApplyPanels();
+        UiToolkitBoxing.ApplyAll();
     }
 
     /// <summary>Called by the settings sliders after a value changed.</summary>
     public static void OnLayoutPrefChanged()
     {
         Prefs.Save();
-        UiBox.ReapplyAllConstraints();
-        UiScaling.ApplyPanels();
+        UiBox.ReapplyAllConstraints();   // SetGlobalMode postfix also refits panels and UI Toolkit boxes
         // CanvasScalers pick the new values up on their next Handle() (every frame).
     }
 }
