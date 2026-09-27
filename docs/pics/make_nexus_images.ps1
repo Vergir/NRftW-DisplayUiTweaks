@@ -26,6 +26,13 @@ magick -size 1920x1080 xc:black `
     -font $fontLight -pointsize 34 -fill "#bbbbbb" -gravity south -annotate +0+60 "Ultrawide  ·  16:10  ·  square  ·  Steam Deck" `
     -quality 92 "$out/cover.jpg"
 
+# ---- Nexus page header (1300x372): the 3:1 gameplay between the top and bottom HUD, title on the right --------------
+magick "3_by_1_with_mod.png" -crop 2077x595+300+272 +repage -resize "1300x372!" -quality 92 "$out/header_clean.jpg"
+magick "$out/header_clean.jpg" "(" -size 372x1300 "gradient:rgba(0,0,0,0)-rgba(0,0,0,0.8)" -rotate -90 ")" -composite `
+    -font $font -pointsize 58 -fill white -gravity northeast -annotate +40+120 "Display & UI Tweaks" `
+    -font $fontLight -pointsize 26 -fill "#d8c9a3" -annotate +42+200 "Any resolution  ·  any aspect ratio  ·  UI size" `
+    -quality 92 "$out/header.jpg"
+
 # ---- Square screen before / after -----------------------------------------------------------------------------------
 magick -size 1920x1080 xc:black `
     "(" "vanilla_16_by_9.png" -crop 2878x2490+0+0 +repage -resize 940x ")" -gravity northwest -geometry +13+150 -composite `
