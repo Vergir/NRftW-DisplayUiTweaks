@@ -14,6 +14,8 @@ internal static class SettingsRows
     private const string SpacerId = "DUT_Spacer", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale", BoxId = "DUT_BoxAspect", BoxToolkitId = "DUT_BoxUiToolkit";
     private static readonly string[] AllIds = { SpacerId, HudId, MenuId, BoxId, BoxToolkitId };
 
+    private const float HoldRepeatSeconds = 0.3f;
+
     private static readonly Dictionary<string, LocalizedMessage> _messages = new Dictionary<string, LocalizedMessage>();
 
     /// <summary>Add the rows to every settings screen that already exists (after a hot reload).</summary>
@@ -165,11 +167,17 @@ internal static class SettingsRows
             increment,
             displayNormalized,
             desc,
-            10,                                 // maxScrollMultiplier (held left/right speeds up to 10 steps)
+            4,                                  // maxScrollMultiplier: a held key speeds up to 4 steps per repeat
             false,                              // invokeCallbackOnStart
             false,                              // canSelectForFader
             false);                             // showOffOnZero
         NameNewRow(content, before, id);
+        // Held-key repeat interval: long enough that a normal key tap is exactly one step.
+        if (content.childCount > before)
+        {
+            var slider = content.GetChild(content.childCount - 1).GetComponent<SliderSettingsItemGUI>();
+            if (slider != null && slider.m_scrollHoldThreshold < HoldRepeatSeconds) slider.m_scrollHoldThreshold = HoldRepeatSeconds;
+        }
     }
 
     private static void AddDropdown(SettingsScreenControls controls, RectTransform content, string id, LocalizedMessage name, LocalizedMessage desc,

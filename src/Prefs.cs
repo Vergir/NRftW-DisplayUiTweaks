@@ -6,8 +6,8 @@ namespace DisplayUiTweaks;
 /// The sizes, the custom aspect and the UI Toolkit box switch are also rows in Options > Display.</summary>
 internal static class Prefs
 {
-    public const float HudScaleMin = 10f, HudScaleMax = 150f, HudScaleStep = 1f;
-    public const float UiBoxAspectMin = 1.0f, UiBoxAspectMax = 4.0f, UiBoxAspectStep = 0.01f;
+    public const float HudScaleMin = 10f, HudScaleMax = 150f, HudScaleStep = 5f;       // per key press; drag = 1%
+    public const float UiBoxAspectMin = 1.0f, UiBoxAspectMax = 4.0f, UiBoxAspectStep = 0.05f; // per key press; drag = 0.01
     public const float GameDefaultUiBoxAspect = 16f / 9f;
 
     private static MelonPreferences_Category _cat = null!;
