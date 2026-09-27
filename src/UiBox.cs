@@ -1,7 +1,7 @@
 using Il2CppMoon.Forsaken;
 using UnityEngine;
 
-namespace MoreAspectRatios;
+namespace DisplayUiTweaks;
 
 /// <summary>The UI box: replacement for UIAspectConstraint.ApplyConstraint (see docs/internal.md).</summary>
 internal static class UiBox

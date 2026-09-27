@@ -1,17 +1,17 @@
 using Il2CppMoon.Forsaken;
 using MelonLoader;
-using MoreAspectRatios;
+using DisplayUiTweaks;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "1.0.0", "Vergir")]
+[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.0.0", "Vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
-namespace MoreAspectRatios;
+namespace DisplayUiTweaks;
 
 /// <summary>Entry point. See docs/internal.md.</summary>
-public class MoreAspectRatiosMod : MelonMod
+public class DisplayUiTweaksMod : MelonMod
 {
-    public static MoreAspectRatiosMod Instance { get; private set; } = null!;
+    public static DisplayUiTweaksMod Instance { get; private set; } = null!;
     public static MelonLogger.Instance Log => Instance.LoggerInstance;
 
     private int _lastW, _lastH;
@@ -36,7 +36,7 @@ public class MoreAspectRatiosMod : MelonMod
             DisplaySettingsTab.s_forceAllUIAspectModesForTesting = true;
         }
 
-        HarmonyInstance.PatchAll(typeof(MoreAspectRatiosMod).Assembly);
+        HarmonyInstance.PatchAll(typeof(DisplayUiTweaksMod).Assembly);
         LoggerInstance.Msg("Patches applied.");
 
         // After a hot reload: apply to what is on screen, and give the existing settings screens our rows.

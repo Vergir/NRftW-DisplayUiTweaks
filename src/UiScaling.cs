@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 
-namespace MoreAspectRatios;
+namespace DisplayUiTweaks;
 
 /// <summary>Canvas scale overrides (HUD / menu) and PanelSettings fitting.</summary>
 internal static class UiScaling
@@ -109,7 +109,7 @@ internal static class UiScaling
             if (r > 0) changed++; else if (r < 0) restored++;
         }
         if (changed + restored > 0)
-            MoreAspectRatiosMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the UI box, " + restored + " restored");
+            DisplayUiTweaksMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the UI box, " + restored + " restored");
     }
 
     /// <summary>Restore every panel we changed.</summary>
@@ -158,7 +158,7 @@ internal static class UiScaling
             if (p.scaleMode == PanelScaleMode.ConstantPixelSize && Mathf.Approximately(p.scale, target.Value)) return 0;
             p.scaleMode = PanelScaleMode.ConstantPixelSize;
             p.scale = target.Value;
-            MoreAspectRatiosMod.Log.Msg("PanelSettings '" + p.name + "': scale " + target.Value.ToString("0.000") + " (fit to UI box, Menu UI Size applied)");
+            DisplayUiTweaksMod.Log.Msg("PanelSettings '" + p.name + "': scale " + target.Value.ToString("0.000") + " (fit to UI box, Menu UI Size applied)");
             return 1;
         }
         if (p.scaleMode != orig.Mode || !Mathf.Approximately(p.scale, orig.Scale))

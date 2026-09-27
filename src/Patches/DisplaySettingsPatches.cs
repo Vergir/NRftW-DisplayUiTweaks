@@ -4,7 +4,7 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppMoon.Forsaken;
 using UnityEngine;
 
-namespace MoreAspectRatios.Patches;
+namespace DisplayUiTweaks.Patches;
 
 /// <summary>Rebuilds the resolution list from every display mode and selects the saved resolution
 /// (see docs/internal.md, "Resolution list").</summary>
@@ -78,15 +78,15 @@ internal static class InitializeAvailableResolutionsPatch
             if (windowDiffers)
             {
                 __instance.SetResolutionFromCurrentSettings(false);
-                MoreAspectRatiosMod.Log.Msg("Window was " + Screen.width + "x" + Screen.height + ", applied the saved resolution " + savedW + "x" + savedH);
+                DisplayUiTweaksMod.Log.Msg("Window was " + Screen.width + "x" + Screen.height + ", applied the saved resolution " + savedW + "x" + savedH);
             }
             __instance.UpdateResolutionDropdownOptions();
-            MoreAspectRatiosMod.Log.Msg("Resolutions: " + before + " listed by the game -> " + list.Count + " available, selected " + names[newIndex]
+            DisplayUiTweaksMod.Log.Msg("Resolutions: " + before + " listed by the game -> " + list.Count + " available, selected " + names[newIndex]
                 + " (saved " + savedW + "x" + savedH + ", window " + Screen.width + "x" + Screen.height + ")");
         }
         catch (System.Exception e)
         {
-            MoreAspectRatiosMod.Log.Error("Resolution unlock failed: " + e);
+            DisplayUiTweaksMod.Log.Error("Resolution unlock failed: " + e);
         }
     }
 }
@@ -98,7 +98,7 @@ internal static class SetResolutionFromCurrentSettingsPatch
     static bool Prefix()
     {
         if (!InitializeAvailableResolutionsPatch.SuppressApply) return true;
-        MoreAspectRatiosMod.Log.Msg("Deferred the game's resolution apply until the full resolution list is built");
+        DisplayUiTweaksMod.Log.Msg("Deferred the game's resolution apply until the full resolution list is built");
         return false;
     }
 }
@@ -107,7 +107,7 @@ internal static class SetResolutionFromCurrentSettingsPatch
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.InitializeUIAspectModes))]
 internal static class InitializeUIAspectModesPatch
 {
-    public const string CustomModeLabel = "Custom (More Aspect Ratios)";
+    public const string CustomModeLabel = "Custom (Display & UI Tweaks)";
     private static UIAspectMode _savedMode = UIAspectMode.Native;
 
     static void Prefix()
@@ -119,7 +119,7 @@ internal static class InitializeUIAspectModesPatch
             var device = Core.SettingsData?.Device;
             if (device != null) _savedMode = device.UIAspectMode;
         }
-        catch (System.Exception e) { MoreAspectRatiosMod.Log.Warning("Could not read the saved UI aspect mode: " + e.Message); }
+        catch (System.Exception e) { DisplayUiTweaksMod.Log.Warning("Could not read the saved UI aspect mode: " + e.Message); }
     }
 
     static void Postfix(DisplaySettingsTab __instance)
@@ -151,17 +151,17 @@ internal static class InitializeUIAspectModesPatch
                 if (device != null && device.UIAspectMode != UIAspectMode.Custom)
                 {
                     device.UIAspectMode = UIAspectMode.Custom;
-                    MoreAspectRatiosMod.Log.Msg("Restored the saved UI aspect mode (Custom) that the game reset to Native");
+                    DisplayUiTweaksMod.Log.Msg("Restored the saved UI aspect mode (Custom) that the game reset to Native");
                 }
                 __instance.m_currentUIAspectModeIndex = modes.IndexOf(UIAspectMode.Custom);
                 if (UIAspectConstraint.s_globalMode != UIAspectMode.Custom) UIAspectConstraint.SetGlobalMode(UIAspectMode.Custom);
             }
 
-            MoreAspectRatiosMod.Log.Msg("UI aspect modes: " + modes.Count + " (current index " + __instance.m_currentUIAspectModeIndex + ")");
+            DisplayUiTweaksMod.Log.Msg("UI aspect modes: " + modes.Count + " (current index " + __instance.m_currentUIAspectModeIndex + ")");
         }
         catch (System.Exception e)
         {
-            MoreAspectRatiosMod.Log.Error("UI aspect mode unlock failed: " + e);
+            DisplayUiTweaksMod.Log.Error("UI aspect mode unlock failed: " + e);
         }
     }
 }
@@ -172,9 +172,9 @@ internal static class DisplaySettingsTabInitializePatch
 {
     static void Postfix(DisplaySettingsTab __instance)
     {
-        MoreAspectRatiosMod.Log.Msg("Display settings tab initialized by the game");
+        DisplayUiTweaksMod.Log.Msg("Display settings tab initialized by the game");
         if (!Prefs.Enabled.Value || !Prefs.AddSettingsRows.Value) return;
         try { SettingsRows.AddTo(__instance); }
-        catch (System.Exception e) { MoreAspectRatiosMod.Log.Error("Adding settings rows failed: " + e); }
+        catch (System.Exception e) { DisplayUiTweaksMod.Log.Error("Adding settings rows failed: " + e); }
     }
 }

@@ -5,8 +5,8 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
-    <AssemblyName>MoreAspectRatios</AssemblyName>
-    <RootNamespace>MoreAspectRatios</RootNamespace>
+    <AssemblyName>DisplayUiTweaks</AssemblyName>
+    <RootNamespace>DisplayUiTweaks</RootNamespace>
     <Version>1.0.0</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDependencyFile>false</GenerateDependencyFile>

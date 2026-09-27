@@ -1,7 +1,7 @@
 using HarmonyLib;
 using UnityEngine.UI;
 
-namespace MoreAspectRatios.Patches;
+namespace DisplayUiTweaks.Patches;
 
 /// <summary>Applies our canvas scale, or lets the game's code run when there is no override.</summary>
 [HarmonyPatch(typeof(CanvasScaler), "HandleScaleWithScreenSize")]

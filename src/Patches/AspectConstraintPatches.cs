@@ -1,7 +1,7 @@
 using HarmonyLib;
 using Il2CppMoon.Forsaken;
 
-namespace MoreAspectRatios.Patches;
+namespace DisplayUiTweaks.Patches;
 
 [HarmonyPatch(typeof(UIAspectConstraint), nameof(UIAspectConstraint.ApplyConstraint))]
 internal static class ApplyConstraintPatch
@@ -26,6 +26,6 @@ internal static class SetGlobalModePatch
             UiScaling.ApplyPanels();
             UiToolkitBoxing.ApplyAll();
         }
-        catch (System.Exception e) { MoreAspectRatiosMod.Log.Warning("SetGlobalMode postfix: " + e.Message); }
+        catch (System.Exception e) { DisplayUiTweaksMod.Log.Warning("SetGlobalMode postfix: " + e.Message); }
     }
 }

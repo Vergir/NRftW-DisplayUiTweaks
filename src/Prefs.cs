@@ -1,8 +1,8 @@
 using MelonLoader;
 
-namespace MoreAspectRatios;
+namespace DisplayUiTweaks;
 
-/// <summary>All user-tunable values. Stored in UserData/MelonPreferences.cfg under [MoreAspectRatios].
+/// <summary>All user-tunable values. Stored in UserData/MelonPreferences.cfg under [DisplayUiTweaks].
 /// The sizes, the custom aspect and the UI Toolkit box switch are also rows in Options > Display.</summary>
 internal static class Prefs
 {
@@ -28,13 +28,13 @@ internal static class Prefs
 
     public static void Init()
     {
-        _cat = MelonPreferences.CreateCategory("MoreAspectRatios", "More Aspect Ratios");
+        _cat = MelonPreferences.CreateCategory("DisplayUiTweaks", "Display & UI Tweaks");
 
         Enabled = _cat.CreateEntry("Enabled", true, description: "Master switch.");
         UnlockResolutions = _cat.CreateEntry("UnlockResolutions", true,
             description: "List every resolution the display supports in Options > Display (the game hides anything narrower than 16:10 or wider than 32:9).");
         UnlockUiAspectModes = _cat.CreateEntry("UnlockUiAspectModes", true,
-            description: "Always show the 'UI aspect' option with all modes plus 'Custom (More Aspect Ratios)' (the game hides the option on non-widescreen monitors).");
+            description: "Always show the 'UI aspect' option with all modes plus 'Custom (Display & UI Tweaks)' (the game hides the option on non-widescreen monitors).");
         DisableLetterbox = _cat.CreateEntry("DisableLetterbox", true,
             description: "Let the world fill the screen on non-16:9 displays (MoonRenderPipelineAsset.Enforce169Aspect = Never).");
         HudScalePercent = _cat.CreateEntry("HudScalePercent", 100f,
@@ -42,7 +42,7 @@ internal static class Prefs
         MenuScalePercent = _cat.CreateEntry("MenuScalePercent", 100f,
             description: "Menus (inventory, stats, map, settings...; fallback DPI 221.5 and UI Toolkit panels): scale relative to the game's own, after the fit-to-box cap (10-150). Also a slider in Options > Display.");
         UiBoxAspect = _cat.CreateEntry("UiBoxAspect", GameDefaultUiBoxAspect,
-            description: "Aspect ratio the whole UI is boxed to in the 'Custom (More Aspect Ratios)' UI aspect mode (1.00-4.00, 1.78 = 16:9). Also a slider in Options > Display.");
+            description: "Aspect ratio the whole UI is boxed to in the 'Custom (Display & UI Tweaks)' UI aspect mode (1.00-4.00, 1.78 = 16:9). Also a slider in Options > Display.");
         FitMenusToBox = _cat.CreateEntry("FitMenusToBox", true,
             description: "Scale menu canvases down so their 1920x1080 reference size fits inside the UI box.");
         FitPanelsToBox = _cat.CreateEntry("FitPanelsToBox", true,

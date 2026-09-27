@@ -3,7 +3,7 @@ using Il2CppMoon.Forsaken;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace MoreAspectRatios;
+namespace DisplayUiTweaks;
 
 /// <summary>Boxes the bounty/challenge boards and the map's detail bar with inline styles (see docs/internal.md).</summary>
 internal static class UiToolkitBoxing

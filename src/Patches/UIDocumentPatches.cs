@@ -1,7 +1,7 @@
 using HarmonyLib;
 using UnityEngine.UIElements;
 
-namespace MoreAspectRatios.Patches;
+namespace DisplayUiTweaks.Patches;
 
 /// <summary>Fits and boxes UI Toolkit screens when they enable.</summary>
 [HarmonyPatch(typeof(UIDocument), "OnEnable")]
@@ -16,6 +16,6 @@ internal static class UIDocumentOnEnablePatch
             if (ps != null) UiScaling.ApplyPanel(ps);
             UiToolkitBoxing.OnDocumentEnabled(__instance);
         }
-        catch (System.Exception e) { MoreAspectRatiosMod.Log.Warning("UIDocument.OnEnable postfix: " + e.Message); }
+        catch (System.Exception e) { DisplayUiTweaksMod.Log.Warning("UIDocument.OnEnable postfix: " + e.Message); }
     }
 }

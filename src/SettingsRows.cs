@@ -5,13 +5,13 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppMoon.Forsaken;
 using UnityEngine;
 
-namespace MoreAspectRatios;
+namespace DisplayUiTweaks;
 
 /// <summary>Our rows in Options > Display (see docs/internal.md, "Settings rows").</summary>
 internal static class SettingsRows
 {
-    private const string Prefix = "MAR_";
-    private const string HudId = "MAR_HudScale", MenuId = "MAR_MenuScale", BoxId = "MAR_BoxAspect", BoxToolkitId = "MAR_BoxUiToolkit";
+    private const string Prefix = "DUT_";
+    private const string HudId = "DUT_HudScale", MenuId = "DUT_MenuScale", BoxId = "DUT_BoxAspect", BoxToolkitId = "DUT_BoxUiToolkit";
     private static readonly string[] AllIds = { HudId, MenuId, BoxId, BoxToolkitId };
 
     private static readonly Dictionary<string, LocalizedMessage> _messages = new Dictionary<string, LocalizedMessage>();
@@ -26,55 +26,55 @@ internal static class SettingsRows
             screens++;
             AddTo(s.m_displayTab);
         }
-        if (screens > 0) MoreAspectRatiosMod.Log.Msg("Checked " + screens + " live settings screen(s) for our rows");
+        if (screens > 0) DisplayUiTweaksMod.Log.Msg("Checked " + screens + " live settings screen(s) for our rows");
     }
 
     public static void AddTo(DisplaySettingsTab tab)
     {
         var controls = tab.m_controls;
-        if (controls == null) { MoreAspectRatiosMod.Log.Warning("DisplaySettingsTab.m_controls is null"); return; }
+        if (controls == null) { DisplayUiTweaksMod.Log.Warning("DisplaySettingsTab.m_controls is null"); return; }
         var content = DisplayContent(controls);
-        if (content == null) { MoreAspectRatiosMod.Log.Warning("Display tab has no content root yet"); return; }
+        if (content == null) { DisplayUiTweaksMod.Log.Warning("Display tab has no content root yet"); return; }
 
         // Drop references to destroyed rows (left by an older build).
         ForgetRows(controls, oursToo: false);
 
         if (content.Find(HudId) != null)
         {
-            MoreAspectRatiosMod.Log.Msg("Settings rows already present, skipping");
+            DisplayUiTweaksMod.Log.Msg("Settings rows already present, skipping");
             return;
         }
         RemoveRegistryEntries(controls);
 
         AddSlider(controls, content, HudId,
             Msg(HudId, "HUD & Dialogue UI Size"),
-            Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue (More Aspect Ratios)."),
+            Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue (Display & UI Tweaks)."),
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.HudScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
-            v => { Prefs.HudScalePercent.Value = Mathf.Round(v); MoreAspectRatiosMod.OnLayoutPrefChanged(); });
+            v => { Prefs.HudScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
         AddSlider(controls, content, MenuId,
             Msg(MenuId, "Menu UI Size"),
-            Msg(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings) (More Aspect Ratios)."),
+            Msg(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings) (Display & UI Tweaks)."),
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.MenuScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
-            v => { Prefs.MenuScalePercent.Value = Mathf.Round(v); MoreAspectRatiosMod.OnLayoutPrefChanged(); });
+            v => { Prefs.MenuScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
         AddSlider(controls, content, BoxId,
             Msg(BoxId, "Custom UI Aspect Ratio"),
-            Msg(BoxId + "_Desc", "Width-to-height ratio the whole UI is kept in when UI Aspect is set to Custom (More Aspect Ratios), 1.78 = 16:9, 3.0 = 27:9."),
+            Msg(BoxId + "_Desc", "Width-to-height ratio the whole UI is kept in when UI Aspect is set to Custom (Display & UI Tweaks), 1.78 = 16:9, 3.0 = 27:9."),
             Prefs.UiBoxAspectMin, Prefs.UiBoxAspectMax, Prefs.UiBoxAspectStep, Prefs.UiBoxAspect.Value,
             v => v.ToString("0.00"),
-            v => { Prefs.UiBoxAspect.Value = Mathf.Round(v * 100f) / 100f; MoreAspectRatiosMod.OnLayoutPrefChanged(); });
+            v => { Prefs.UiBoxAspect.Value = Mathf.Round(v * 100f) / 100f; DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
         AddDropdown(controls, content, BoxToolkitId,
             Msg(BoxToolkitId, "Box Bounty Boards & Map Details"),
-            Msg(BoxToolkitId + "_Desc", "Keep the bounty and challenge boards and the map's detail bar inside the UI box. The game's UI Aspect option only boxes parts of these screens (More Aspect Ratios mod)."),
+            Msg(BoxToolkitId + "_Desc", "Keep the bounty and challenge boards and the map's detail bar inside the UI box. The game's UI Aspect option only boxes parts of these screens (Display & UI Tweaks)."),
             new[] { "Off", "On" },
             Prefs.BoxUiToolkitScreens.Value ? 1 : 0,
-            i => { Prefs.BoxUiToolkitScreens.Value = i == 1; MoreAspectRatiosMod.OnLayoutPrefChanged(); });
+            i => { Prefs.BoxUiToolkitScreens.Value = i == 1; DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
-        MoreAspectRatiosMod.Log.Msg("Added More Aspect Ratios rows to Options > Display");
+        DisplayUiTweaksMod.Log.Msg("Added Display & UI Tweaks rows to Options > Display");
     }
 
     /// <summary>Hot reload / unload: destroy our rows on every live settings screen and free their registry keys.</summary>
@@ -96,7 +96,7 @@ internal static class SettingsRows
                 }
             RemoveRegistryEntries(controls);
         }
-        if (removed > 0) MoreAspectRatiosMod.Log.Msg("Removed " + removed + " settings rows");
+        if (removed > 0) DisplayUiTweaksMod.Log.Msg("Removed " + removed + " settings rows");
     }
 
     /// <summary>Drop references the controls hold to destroyed rows (and, with oursToo, to our live rows):
@@ -117,7 +117,7 @@ internal static class SettingsRows
                 if (bound[i] == null) { bound.RemoveAt(i); dropped++; }
         if (IsDeadOrOurs(controls.m_cachedSelectedItemGUI, oursToo)) { controls.m_cachedSelectedItemGUI = null; dropped++; }
         if (IsDeadOrOurs(controls.m_modalPreviousElement, oursToo)) { controls.m_modalPreviousElement = null; dropped++; }
-        if (dropped > 0) MoreAspectRatiosMod.Log.Msg("Dropped " + dropped + " settings-screen reference(s) to " + (oursToo ? "our rows" : "destroyed rows"));
+        if (dropped > 0) DisplayUiTweaksMod.Log.Msg("Dropped " + dropped + " settings-screen reference(s) to " + (oursToo ? "our rows" : "destroyed rows"));
     }
 
     private static bool IsDeadOrOurs(SettingsItemGUIBase? item, bool oursToo)

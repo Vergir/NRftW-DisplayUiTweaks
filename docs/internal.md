@@ -8,8 +8,8 @@ types without a namespace live in `Il2Cpp`).
 
 | File | What it does |
 |---|---|
-| `MoreAspectRatiosMod.cs` | Entry point: preferences, Harmony, re-apply on scene load / resolution change, unload. |
-| `Prefs.cs` | MelonPreferences entries (`[MoreAspectRatios]`). |
+| `DisplayUiTweaksMod.cs` | Entry point: preferences, Harmony, re-apply on scene load / resolution change, unload. |
+| `Prefs.cs` | MelonPreferences entries (`[DisplayUiTweaks]`). |
 | `UiBox.cs` | The UI box: replacement for `UIAspectConstraint.ApplyConstraint`. |
 | `UiScaling.cs` | CanvasScaler overrides and PanelSettings fitting. |
 | `UiToolkitBoxing.cs` | Inline styles that box the bounty boards and the map's detail bar. |
@@ -47,7 +47,7 @@ nor a plain "keep the window size" rule corrects it.
   (`SupportsWideScreenUIAspectSetting`, inlined). The game has two debug switches that turn this off:
   `DisplaySettingsTab.s_forceShowUIAspectSettingForTesting` and `s_forceAllUIAspectModesForTesting`.
 * Custom exists in the game but is never offered. An `InitializeUIAspectModes` postfix appends it to
-  `m_allowedUIAspectModes` / `m_uiAspectModeNames` as "Custom (More Aspect Ratios)".
+  `m_allowedUIAspectModes` / `m_uiAspectModeNames` as "Custom (Display & UI Tweaks)".
 * `InitializeUIAspectModes` resets a saved mode that is not in its list (Custom never is) to Native. The prefix captures
   the saved mode, the postfix restores it and calls `SetGlobalMode`.
 
@@ -126,7 +126,7 @@ overload) in a `DisplaySettingsTab.Initialize` postfix.
   same Id twice throws after the row prefab was instantiated, which leaves an orphan row labelled "Slider".
 * The game builds a settings screen when a scene loads (boot, entering the realm), not when the menu is reopened, and
   `DisplaySettingsTab.Initialize` can run twice for the same screen during boot. Rows are therefore found by their
-  GameObject name (`MAR_*`) instead of static state.
+  GameObject name (`DUT_*`) instead of static state.
 * The controls also keep direct references to rows: `m_actualDropDownInstances` (Back calls `IsOpen` on each through
   `IsAnyDropDownOpen`), `m_boundDropDownInstances`, `m_cachedSelectedItemGUI`, `m_modalPreviousElement`. Rows must be
   removed from those before they are destroyed, or Back throws and stops working.

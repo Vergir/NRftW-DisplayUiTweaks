@@ -1,7 +1,7 @@
 using Il2Cpp;
 using UnityEngine.Rendering;
 
-namespace MoreAspectRatios;
+namespace DisplayUiTweaks;
 
 /// <summary>Turns off the 16:9 letterbox.</summary>
 internal static class RenderPipelineTweaks
@@ -15,14 +15,14 @@ internal static class RenderPipelineTweaks
         var asset = rp == null ? null : rp.TryCast<MoonRenderPipelineAsset>();
         if (asset == null)
         {
-            if (!_warned) MoreAspectRatiosMod.Log.Warning("MoonRenderPipelineAsset not found (currentRenderPipeline is null or another type).");
+            if (!_warned) DisplayUiTweaksMod.Log.Warning("MoonRenderPipelineAsset not found (currentRenderPipeline is null or another type).");
             _warned = true;
             return;
         }
         if (asset.Enforce169Aspect != MoonRenderPipelineAsset.Enforce169Mode.Never)
         {
             asset.Enforce169Aspect = MoonRenderPipelineAsset.Enforce169Mode.Never;
-            MoreAspectRatiosMod.Log.Msg("Enforce169Aspect -> Never");
+            DisplayUiTweaksMod.Log.Msg("Enforce169Aspect -> Never");
         }
     }
 }
