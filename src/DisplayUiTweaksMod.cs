@@ -86,10 +86,13 @@ public class DisplayUiTweaksMod : MelonMod
             _pendingReason = null;
             ApplyEverything(reason);
         }
-        if (_settingApplyAt >= 0f && Time.unscaledTime >= _settingApplyAt)
+        // A changed setting is applied once it has stopped changing and the mouse button is up (a slider drag resizing
+        // the settings screen under the cursor would otherwise feed back into the drag).
+        if (_settingApplyAt >= 0f && Time.unscaledTime >= _settingApplyAt && !Input.GetMouseButton(0))
         {
             _settingApplyAt = -1f;
             Prefs.Save();
+            Prefs.CommitLayoutValues();
             UiBox.ReapplyAllConstraints();   // SetGlobalMode postfix refits the known panels and UI Toolkit screens
         }
     }
@@ -103,8 +106,8 @@ public class DisplayUiTweaksMod : MelonMod
         UiToolkitBoxing.ApplyAll(rescan: true);
     }
 
-    /// <summary>Called by the settings rows after a value changed. Canvas sizes follow every frame by themselves; the
-    /// box and panels are re-applied once the value has stopped changing.</summary>
+    /// <summary>Called by the settings rows after a value changed. HUD size follows every frame by itself; menu size,
+    /// the box and panels are applied once the value has stopped changing and the mouse button is released.</summary>
     public static void OnLayoutPrefChanged()
     {
         _settingApplyAt = Time.unscaledTime + SettingApplyDelay;

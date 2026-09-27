@@ -167,7 +167,7 @@ internal static class SettingsRows
             increment,
             displayNormalized,
             desc,
-            4,                                  // maxScrollMultiplier: a held key speeds up to 4 steps per repeat
+            10,                                 // maxScrollMultiplier: a held key speeds up to 10 steps per repeat
             false,                              // invokeCallbackOnStart
             false,                              // canSelectForFader
             false);                             // showOffOnZero

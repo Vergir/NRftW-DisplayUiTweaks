@@ -6,8 +6,8 @@ namespace DisplayUiTweaks;
 /// The sizes, the custom aspect and the UI Toolkit box switch are also rows in Options > Display.</summary>
 internal static class Prefs
 {
-    public const float HudScaleMin = 10f, HudScaleMax = 150f, HudScaleStep = 5f;       // per key press; drag = 1%
-    public const float UiBoxAspectMin = 1.0f, UiBoxAspectMax = 4.0f, UiBoxAspectStep = 0.05f; // per key press; drag = 0.01
+    public const float HudScaleMin = 10f, HudScaleMax = 150f, HudScaleStep = 1f;
+    public const float UiBoxAspectMin = 1.0f, UiBoxAspectMax = 4.0f, UiBoxAspectStep = 0.01f;
     public const float GameDefaultUiBoxAspect = 16f / 9f;
 
     private static MelonPreferences_Category _cat = null!;
@@ -55,13 +55,28 @@ internal static class Prefs
             description: "CanvasScaler.fallbackScreenDPI above this counts as a menu canvas (game: 96 = HUD, 221.5 = menus).");
         AddSettingsRows = _cat.CreateEntry("AddSettingsRows", true,
             description: "Add this mod's rows to Options > Display.");
+        CommitLayoutValues();
     }
 
     public static void Save() => MelonPreferences.Save();
 
     public static float HudScale => Clamp(HudScalePercent.Value, HudScaleMin, HudScaleMax) / 100f;
-    public static float MenuScale => Clamp(MenuScalePercent.Value, HudScaleMin, HudScaleMax) / 100f;
-    public static float BoxAspect => Clamp(UiBoxAspect.Value, UiBoxAspectMin, UiBoxAspectMax);
+    // Menu UI Size and Custom UI Aspect Ratio resize the settings screen itself. The layout uses these committed
+    // copies, which follow the preferences only when the mouse button is up (see DisplayUiTweaksMod.OnUpdate);
+    // otherwise dragging those sliders moves the slider under the cursor and the value bounces.
+    public static float MenuScale { get; private set; } = 1f;
+    public static float BoxAspect { get; private set; } = GameDefaultUiBoxAspect;
+
+    /// <summary>Copy the preference values into the layout. Returns true when something changed.</summary>
+    public static bool CommitLayoutValues()
+    {
+        float menu = Clamp(MenuScalePercent.Value, HudScaleMin, HudScaleMax) / 100f;
+        float box = Clamp(UiBoxAspect.Value, UiBoxAspectMin, UiBoxAspectMax);
+        bool changed = menu != MenuScale || box != BoxAspect;
+        MenuScale = menu;
+        BoxAspect = box;
+        return changed;
+    }
 
     private static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;
 }
