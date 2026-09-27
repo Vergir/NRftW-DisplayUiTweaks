@@ -10,7 +10,7 @@ namespace DisplayUiTweaks;
 /// <summary>Our rows in Options > Display (see docs/internal.md, "Settings rows").</summary>
 internal static class SettingsRows
 {
-    private const string Prefix = "DUT_";
+    public const string Prefix = "DUT_";
     private const string SpacerId = "DUT_Spacer", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale", BoxId = "DUT_BoxAspect", BoxToolkitId = "DUT_BoxUiToolkit";
     private static readonly string[] AllIds = { SpacerId, HudId, MenuId, BoxId, BoxToolkitId };
 

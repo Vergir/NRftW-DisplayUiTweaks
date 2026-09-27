@@ -10,6 +10,10 @@ internal static class UiToolkitBoxing
 {
     private const string ChunkDetailsInnerClass = "chunk-details-aspect-inner";
 
+    // Documents of the screens we handle, found by a rescan (scene load / resolution change), not on every change.
+    private static readonly List<UIDocument> _activityDocs = new List<UIDocument>();
+    private static readonly List<UIDocument> _mapOverlays = new List<UIDocument>();
+
     private static readonly List<VisualElement> _boxedRoots = new List<VisualElement>();
     private static readonly List<VisualElement> _cappedElements = new List<VisualElement>();
 
@@ -21,15 +25,24 @@ internal static class UiToolkitBoxing
         else if (IsMapOverlay(doc)) CapChunkDetails(doc.rootVisualElement);
     }
 
-    /// <summary>Re-apply to every known screen (settings changed, resolution changed, scene loaded).</summary>
-    public static void ApplyAll()
+    /// <summary>Re-apply to every known screen; rescan = look for the screens first (scene load, resolution change).</summary>
+    public static void ApplyAll(bool rescan = false)
     {
+        if (rescan) Rescan();
+        foreach (var d in _activityDocs) if (d != null) BoxRoot(d.rootVisualElement);
+        foreach (var d in _mapOverlays) if (d != null) CapChunkDetails(d.rootVisualElement);
+    }
+
+    private static void Rescan()
+    {
+        _activityDocs.Clear();
+        _mapOverlays.Clear();
         foreach (var p in Resources.FindObjectsOfTypeAll<ActivityScreenPanel>())
-            if (p != null && p.Document != null) BoxRoot(p.Document.rootVisualElement);
+            if (p != null && p.Document != null) _activityDocs.Add(p.Document);
         foreach (var p in Resources.FindObjectsOfTypeAll<ActivityVendorScreenPanel>())
-            if (p != null && p.Document != null) BoxRoot(p.Document.rootVisualElement);
+            if (p != null && p.Document != null) _activityDocs.Add(p.Document);
         foreach (var m in Resources.FindObjectsOfTypeAll<MapScreen>())
-            if (m != null && m.MapUiToolkitOverlay != null) CapChunkDetails(m.MapUiToolkitOverlay.rootVisualElement);
+            if (m != null && m.MapUiToolkitOverlay != null) _mapOverlays.Add(m.MapUiToolkitOverlay);
     }
 
     /// <summary>Remove every inline style we set (unload / hot reload).</summary>
@@ -43,21 +56,9 @@ internal static class UiToolkitBoxing
 
     private static bool Active => Prefs.Enabled.Value && Prefs.BoxUiToolkitScreens.Value && UiBox.GlobalBoxIsSmallerThanScreen();
 
-    private static bool IsActivityDocument(UIDocument doc)
-    {
-        foreach (var p in Resources.FindObjectsOfTypeAll<ActivityScreenPanel>())
-            if (p != null && p.Document != null && p.Document.Pointer == doc.Pointer) return true;
-        foreach (var p in Resources.FindObjectsOfTypeAll<ActivityVendorScreenPanel>())
-            if (p != null && p.Document != null && p.Document.Pointer == doc.Pointer) return true;
-        return false;
-    }
+    private static bool IsActivityDocument(UIDocument doc) => _activityDocs.Exists(d => d != null && d.Pointer == doc.Pointer);
 
-    private static bool IsMapOverlay(UIDocument doc)
-    {
-        foreach (var m in Resources.FindObjectsOfTypeAll<MapScreen>())
-            if (m != null && m.MapUiToolkitOverlay != null && m.MapUiToolkitOverlay.Pointer == doc.Pointer) return true;
-        return false;
-    }
+    private static bool IsMapOverlay(UIDocument doc) => _mapOverlays.Exists(d => d != null && d.Pointer == doc.Pointer);
 
     /// <summary>Screen-relative insets of the UI box, in percent (left/right, top/bottom).</summary>
     private static Vector2 InsetPercent()

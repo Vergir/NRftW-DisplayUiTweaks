@@ -78,6 +78,8 @@ internal static class UiScaling
 
     private struct PanelOriginal { public PanelScaleMode Mode; public float Scale; }
     private static readonly Dictionary<int, PanelOriginal> _panelOriginals = new Dictionary<int, PanelOriginal>();
+    // Known PanelSettings assets. Resources.FindObjectsOfTypeAll walks every loaded object, so it only runs on a rescan.
+    private static readonly List<PanelSettings> _panels = new List<PanelSettings>();
 
     /// <summary>Unity's own ScaleWithScreenSize factor for a PanelSettings.</summary>
     public static float GamePanelScale(PanelSettings p, Vector2 screen)
@@ -98,12 +100,18 @@ internal static class UiScaling
         }
     }
 
-    /// <summary>Re-evaluate every loaded PanelSettings asset.</summary>
-    public static void ApplyPanels()
+    /// <summary>Re-evaluate every known PanelSettings asset; rescan = look for newly loaded ones first.</summary>
+    public static void ApplyPanels(bool rescan = false)
     {
-        int found = 0, changed = 0, restored = 0;
-        foreach (var p in Resources.FindObjectsOfTypeAll<PanelSettings>())
+        if (rescan)
         {
+            _panels.Clear();
+            foreach (var p in Resources.FindObjectsOfTypeAll<PanelSettings>()) if (p != null) _panels.Add(p);
+        }
+        int found = 0, changed = 0, restored = 0;
+        foreach (var p in _panels)
+        {
+            if (p == null) continue;
             found++;
             var r = ApplyPanel(p);
             if (r > 0) changed++; else if (r < 0) restored++;
@@ -128,6 +136,7 @@ internal static class UiScaling
     public static int ApplyPanel(PanelSettings p)
     {
         if (p == null) return 0;
+        if (!_panels.Exists(x => x != null && x.Pointer == p.Pointer)) _panels.Add(p);
         var screen = new Vector2(Screen.width, Screen.height);
         int id = p.GetInstanceID();
         bool known = _panelOriginals.TryGetValue(id, out var orig);

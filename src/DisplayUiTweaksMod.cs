@@ -18,6 +18,8 @@ public class DisplayUiTweaksMod : MelonMod
     private static string? _pendingReason;
     private static float _applyAt;
     private const float SceneApplyDelay = 0.5f;   // one re-apply per burst of additive scene loads
+    private const float SettingApplyDelay = 0.25f; // settings rows: apply once the value stops changing
+    private static float _settingApplyAt = -1f;
 
     public override void OnInitializeMelon()
     {
@@ -84,21 +86,27 @@ public class DisplayUiTweaksMod : MelonMod
             _pendingReason = null;
             ApplyEverything(reason);
         }
+        if (_settingApplyAt >= 0f && Time.unscaledTime >= _settingApplyAt)
+        {
+            _settingApplyAt = -1f;
+            Prefs.Save();
+            UiBox.ReapplyAllConstraints();   // SetGlobalMode postfix refits the known panels and UI Toolkit screens
+        }
     }
 
-    /// <summary>Re-applies the non-Harmony changes. Safe to repeat.</summary>
+    /// <summary>Re-applies the non-Harmony changes, looking for newly loaded screens first. Safe to repeat.</summary>
     public static void ApplyEverything(string reason)
     {
         if (!reason.StartsWith("scene")) Log.Msg("Applying (" + reason + ")");
         RenderPipelineTweaks.Apply();
-        UiScaling.ApplyPanels();
-        UiToolkitBoxing.ApplyAll();
+        UiScaling.ApplyPanels(rescan: true);
+        UiToolkitBoxing.ApplyAll(rescan: true);
     }
 
-    /// <summary>Called by the settings sliders after a value changed.</summary>
+    /// <summary>Called by the settings rows after a value changed. Canvas sizes follow every frame by themselves; the
+    /// box and panels are re-applied once the value has stopped changing.</summary>
     public static void OnLayoutPrefChanged()
     {
-        Prefs.Save();
-        UiBox.ReapplyAllConstraints();   // canvas scalers pick new values up on their own every frame
+        _settingApplyAt = Time.unscaledTime + SettingApplyDelay;
     }
 }
