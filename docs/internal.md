@@ -84,13 +84,16 @@ postfixes it so UI Toolkit panels follow a UI Aspect change.
 
 ## Scaling
 
-The game has two kinds of `ScaleWithScreenSize` canvases, both with reference resolution 1920x1080 and
-match = 1 (height):
+The game's `ScaleWithScreenSize` canvases all use reference resolution 1920x1080. They fall into two kinds, told
+apart by `fallbackScreenDPI` (a value the game never uses for scaling, so it serves as a marker):
 
 | Kind | `fallbackScreenDPI` | Examples |
 |---|---|---|
-| HUD | 96 | HUD, overlays, notifications, dialogue (pooled prefabs) |
-| Menu | 221.5 | the player menu screens (inventory, stats, settings...) |
+| HUD | 96 | HUD, overlays, notifications, dialogue (pooled prefabs); match = 1 (height) |
+| Menu | 100 | the main menu canvas (with its settings screen); match = 0 (width) |
+| Menu | 221.5 | the player menu screens (inventory, stats, settings...); match = 1 (height) |
+
+Anything above 96 (`HudMaxDpi`) counts as a menu, so the main menu follows Menu UI Size like the in-game menus.
 
 `CanvasScaler.HandleScaleWithScreenSize` runs every frame. The prefix computes Unity's own result (same formula as
 Unity's source), then:

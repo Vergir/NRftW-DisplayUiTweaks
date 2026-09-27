@@ -23,7 +23,7 @@ internal static class Prefs
     public static MelonPreferences_Entry<float> HudScalePercent = null!;
     public static MelonPreferences_Entry<float> MenuScalePercent = null!;
     public static MelonPreferences_Entry<float> UiBoxAspect = null!;
-    public static MelonPreferences_Entry<float> MenuDpiThreshold = null!;
+    public static MelonPreferences_Entry<float> HudMaxDpi = null!;
     public static MelonPreferences_Entry<bool> AddSettingsRows = null!;
 
     public static void Init()
@@ -40,7 +40,7 @@ internal static class Prefs
         HudScalePercent = _cat.CreateEntry("HudScalePercent", 100f,
             description: "In-game HUD, overlays and dialogue (canvases with fallback DPI 96): scale relative to the game's own (10-150). Also a slider in Options > Display.");
         MenuScalePercent = _cat.CreateEntry("MenuScalePercent", 100f,
-            description: "Menus (inventory, stats, map, settings...; fallback DPI 221.5 and UI Toolkit panels): scale relative to the game's own, after the fit-to-box cap (10-150). Also a slider in Options > Display.");
+            description: "Menus (main menu, inventory, stats, map, settings...; fallback DPI above 96 and UI Toolkit panels): scale relative to the game's own, after the fit-to-box cap (10-150). Also a slider in Options > Display.");
         UiBoxAspect = _cat.CreateEntry("UiBoxAspect", GameDefaultUiBoxAspect,
             description: "Aspect ratio the whole UI is boxed to in the 'Custom (Display & UI Tweaks)' UI aspect mode (1.00-4.00, 1.78 = 16:9). Also a slider in Options > Display.");
         FitMenusToBox = _cat.CreateEntry("FitMenusToBox", true,
@@ -51,8 +51,8 @@ internal static class Prefs
             description: "Bounty Board & Map Fix: keep the bounty and challenge boards and the map's detail bar inside the UI box like the other menus (the game only boxes parts of these screens). Also a row in Options > Display.");
         StretchMismatchedRoots = _cat.CreateEntry("StretchMismatchedRoots", true,
             description: "Box screens whose root is not screen-sized by their overlap with the UI box instead of the game's aspect-in-parent rule; fixed-size screens (scribe table, inspect player) keep their layout and shrink only to fit.");
-        MenuDpiThreshold = _cat.CreateEntry("MenuDpiThreshold", 100f,
-            description: "CanvasScaler.fallbackScreenDPI above this counts as a menu canvas (game: 96 = HUD, 221.5 = menus).");
+        HudMaxDpi = _cat.CreateEntry("HudMaxDpi", 96f,
+            description: "Canvases with CanvasScaler.fallbackScreenDPI up to this are HUD, above it menus (game: 96 = HUD, 100 = main menu, 221.5 = in-game menus).");
         AddSettingsRows = _cat.CreateEntry("AddSettingsRows", true,
             description: "Add this mod's rows to Options > Display.");
         CommitLayoutValues();

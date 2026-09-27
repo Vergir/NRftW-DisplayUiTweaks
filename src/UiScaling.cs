@@ -38,7 +38,7 @@ internal static class UiScaling
     public static float? OverrideCanvasScale(CanvasScaler s)
     {
         if (!Prefs.Enabled.Value) return null;
-        bool isMenu = s.fallbackScreenDPI > Prefs.MenuDpiThreshold.Value;
+        bool isMenu = s.fallbackScreenDPI > Prefs.HudMaxDpi.Value;
         var screen = new Vector2(Screen.width, Screen.height);
         float game = GameCanvasScale(s, screen);
 
