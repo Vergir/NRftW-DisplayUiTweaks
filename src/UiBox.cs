@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Il2CppMoon.Forsaken;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace DisplayUiTweaks;
 
@@ -9,6 +11,9 @@ internal static class UiBox
     private const float Aspect16x9 = 1.7777778f;
     private const float Aspect21x9 = 2.3333333f;
     private const float Aspect32x9 = 3.5555556f;
+
+    // Fixed-size screens we shrank to fit the box, by instance id (to undo on unload / when no longer needed).
+    private static readonly Dictionary<int, RectTransform> _fitted = new Dictionary<int, RectTransform>();
 
     /// <summary>Aspect of the box for a mode, or 0 for Native (no box).</summary>
     public static float TargetAspect(UIAspectMode mode)
@@ -53,16 +58,29 @@ internal static class UiBox
         if (parent.x <= 0f || parent.y <= 0f) return;
 
         UIAspectMode mode = (c.m_useGlobalMode && Application.isPlaying) ? UIAspectConstraint.s_globalMode : c.m_mode;
+        RectTransform rt = c.m_rectTransform;
 
-        // Parent not screen-shaped = fixed-size root (scribe table, inspect player): stretch instead of box.
-        if (Prefs.StretchMismatchedRoots.Value && mode != UIAspectMode.Native)
+        // Parent not screen-shaped = fixed-size root (recipe screens, inspect player): stretch to it instead of
+        // boxing (boxing cuts its content off), and shrink it if it comes out larger than the box.
+        bool fixedRoot = false;
+        if (Prefs.StretchMismatchedRoots.Value)
         {
             float screenAspect = (float)Screen.width / Screen.height;
             float parentAspect = parent.x / parent.y;
-            if (Mathf.Abs(parentAspect - screenAspect) > 0.02f) mode = UIAspectMode.Native;
+            fixedRoot = Mathf.Abs(parentAspect - screenAspect) > 0.02f;
         }
+        if (fixedRoot)
+        {
+            if (rt != null)
+            {
+                UIAspectConstraint.ApplyStretchToParent(rt);
+                FitFixedRoot(c, rt, parent);
+            }
+            c.ApplySafeZone(parent.x, parent.y);
+            return;
+        }
+        if (rt != null) Unfit(rt);
 
-        RectTransform rt = c.m_rectTransform;
         float target = TargetAspect(mode);
         Vector2 box;
         if (target <= 0f)
@@ -82,6 +100,50 @@ internal static class UiBox
             }
         }
         c.ApplySafeZone(box.x, box.y);
+    }
+
+    /// <summary>Scales a fixed-size screen down so it fits the UI box (never up).</summary>
+    private static void FitFixedRoot(UIAspectConstraint c, RectTransform rt, Vector2 parent)
+    {
+        float canvasScale = ExpectedCanvasScale(c, rt);
+        Vector2 box = GlobalBoxSizePx();
+        float s = Mathf.Min(1f, box.x / (parent.x * canvasScale), box.y / (parent.y * canvasScale));
+        if (s >= 0.999f) { Unfit(rt); return; }
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        if (Mathf.Abs(rt.localScale.x - s) > 0.001f)
+        {
+            rt.localScale = new Vector3(s, s, 1f);
+            DisplayUiTweaksMod.Log.Msg("Fitted fixed-size screen '" + ScreenName(rt) + "' to the UI box (scale " + s.ToString("0.000") + ")");
+        }
+        _fitted[rt.GetInstanceID()] = rt;
+    }
+
+    private static void Unfit(RectTransform rt)
+    {
+        if (_fitted.Remove(rt.GetInstanceID())) rt.localScale = Vector3.one;
+    }
+
+    /// <summary>Undo every fit (unload / hot reload).</summary>
+    public static void RestoreFixedRoots()
+    {
+        foreach (var rt in _fitted.Values) if (rt != null) rt.localScale = Vector3.one;
+        _fitted.Clear();
+    }
+
+    /// <summary>The canvas scale this screen gets this frame (the scaler may not have applied a new value yet).</summary>
+    private static float ExpectedCanvasScale(UIAspectConstraint c, RectTransform rt)
+    {
+        var scaler = c.GetComponentInParent<CanvasScaler>();
+        if (scaler != null && scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize)
+            return UiScaling.OverrideCanvasScale(scaler) ?? UiScaling.GameCanvasScale(scaler, new Vector2(Screen.width, Screen.height));
+        var p = rt.parent;
+        return p != null && p.lossyScale.x > 0f ? p.lossyScale.x : 1f;
+    }
+
+    private static string ScreenName(Transform t)
+    {
+        var p = t.parent;
+        return p != null ? p.name : t.name;
     }
 
     /// <summary>Re-apply every live constraint.</summary>

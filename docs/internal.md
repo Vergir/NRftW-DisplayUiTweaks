@@ -69,9 +69,11 @@ ApplySafeZone(w, h);
 same logic plus two changes:
 
 * Custom uses the Custom UI Aspect Ratio slider.
-* A constraint whose parent is not screen-shaped is stretched instead of boxed. Two screens (the scribe table,
-  `researchRecipesScreen`, and `inspectPlayerScreen`) have a fixed 1920x1080 root; boxing those to a narrow box cuts
-  their content off.
+* A constraint whose parent is not screen-shaped is stretched to that parent instead of boxed. The recipe screens
+  (`learnedRecipesScreen`, `researchRecipesScreen`) and `inspectPlayerScreen` have a fixed 1920x1080 root; boxing
+  those to a narrow box cuts their content off. Their size comes from the menu canvas scale alone, so when they come
+  out larger than the box (Menu UI Size above 100%, or a box narrower than 16:9 with height-limited scaling) the
+  constrained element is scaled down (`localScale`) to fit the box. Undone on unload.
 
 `SetGlobalMode(mode)` re-applies every live constraint; the mod calls it to refresh after a slider change, and
 postfixes it so UI Toolkit panels follow a UI Aspect change.

@@ -58,7 +58,7 @@ public class DisplayUiTweaksMod : MelonMod
         catch (System.Exception e) { LoggerInstance.Warning("UiToolkitBoxing.RestoreAll: " + e.Message); }
         try { SettingsRows.RemoveAll(); }
         catch (System.Exception e) { LoggerInstance.Warning("SettingsRows.RemoveAll: " + e.Message); }
-        try { UiBox.ReapplyAllConstraints(); }
+        try { UiBox.RestoreFixedRoots(); UiBox.ReapplyAllConstraints(); }
         catch (System.Exception e) { LoggerInstance.Warning("ReapplyAllConstraints: " + e.Message); }
     }
 
