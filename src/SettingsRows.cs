@@ -7,19 +7,7 @@ using UnityEngine;
 
 namespace MoreAspectRatios;
 
-/// <summary>
-/// Our rows in Options > Display, built with the game's own SettingsScreenControls.AddSliderItem / AddActualDropDownItem.
-/// Sliders work on a normalized 0..1 value with a fixed increment; we map that to our ranges.
-/// The IPlayerSettingAdapter argument of AddSliderItem is only stored by the row (never read in this build), so we pass null.
-///
-/// Lifetime facts that shape this class:
-///  - The game builds its SettingsScreens once, during boot, and keeps them for the whole session (quitting to the main
-///    menu does not rebuild them). DisplaySettingsTab.Initialize can run twice for the same screen during boot.
-///  - SettingsScreenControls keeps a per-category dictionary keyed by the label's Id; adding the same Id twice throws
-///    *after* the row prefab was instantiated, leaving an orphan "Slider" row.
-/// So rows are found by their GameObject name (MAR_*), not by static state, which also survives a hot reload: the old
-/// build removes its rows on unload, and the new build adds fresh ones to every live settings screen right away.
-/// </summary>
+/// <summary>Our rows in Options > Display (see docs/internal.md, "Settings rows").</summary>
 internal static class SettingsRows
 {
     private const string Prefix = "MAR_";
@@ -48,7 +36,7 @@ internal static class SettingsRows
         var content = DisplayContent(controls);
         if (content == null) { MoreAspectRatiosMod.Log.Warning("Display tab has no content root yet"); return; }
 
-        // Repair screens left behind by an older build that destroyed its rows without unregistering them.
+        // Drop references to destroyed rows (left by an older build).
         ForgetRows(controls, oursToo: false);
 
         if (content.Find(HudId) != null)
@@ -97,8 +85,7 @@ internal static class SettingsRows
         {
             var controls = s != null && s.m_displayTab != null ? s.m_displayTab.m_controls : null;
             if (controls == null) continue;
-            // Unregister first: the controls keep direct references to dropdown rows (Back asks every one IsOpen)
-            // and to the selected / modal row; a destroyed row left in there makes Back throw.
+            // Unregister before destroying, or Back throws on the destroyed dropdown.
             ForgetRows(controls, oursToo: true);
             var content = DisplayContent(controls);
             if (content != null)

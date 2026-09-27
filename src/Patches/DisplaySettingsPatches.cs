@@ -6,16 +6,8 @@ using UnityEngine;
 
 namespace MoreAspectRatios.Patches;
 
-/// <summary>
-/// The game only lists resolutions with an aspect between 16:10 and 32:9 (the check is inlined, so it cannot be hooked
-/// on its own). Worse, when the saved resolution is not in that list the original applies AND saves a fallback from it
-/// through SetResolutionFromCurrentSettings, which is how a 9:8 player ends up at 1680x1050 after every launch.
-/// So: while the original runs, SetResolutionFromCurrentSettings is suppressed; afterwards the list is rebuilt from
-/// every mode the display reports and the entry is chosen from the SAVED resolution (the game's intent), falling back to
-/// the running window size. The saved resolution is applied only when the window differs from it: that restores e.g. a
-/// Steam Deck whose Unity window prefs say 800x800 while the game's own setting says 1280x800, and it never touches a
-/// window size that is not in the list (SetResolutionFromCurrentSettings would treat that as "custom" anyway).
-/// </summary>
+/// <summary>Rebuilds the resolution list from every display mode and selects the saved resolution
+/// (see docs/internal.md, "Resolution list").</summary>
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.InitializeAvailableResolutions))]
 internal static class InitializeAvailableResolutionsPatch
 {
@@ -85,7 +77,6 @@ internal static class InitializeAvailableResolutionsPatch
             bool windowDiffers = savedIndex >= 0 && (Screen.width != savedW || Screen.height != savedH);
             if (windowDiffers)
             {
-                // Apply (and save) the game's own saved resolution, now that it is in the list.
                 __instance.SetResolutionFromCurrentSettings(false);
                 MoreAspectRatiosMod.Log.Msg("Window was " + Screen.width + "x" + Screen.height + ", applied the saved resolution " + savedW + "x" + savedH);
             }
@@ -100,7 +91,7 @@ internal static class InitializeAvailableResolutionsPatch
     }
 }
 
-/// <summary>Skips the apply+save while the original InitializeAvailableResolutions runs with its narrow list.</summary>
+/// <summary>Defers the game's resolution apply while InitializeAvailableResolutions runs.</summary>
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.SetResolutionFromCurrentSettings))]
 internal static class SetResolutionFromCurrentSettingsPatch
 {
@@ -112,13 +103,7 @@ internal static class SetResolutionFromCurrentSettingsPatch
     }
 }
 
-/// <summary>
-/// Adds the game's own (otherwise unreachable) "Custom" UI aspect mode to the dropdown, labelled for the mod. Our
-/// ApplyConstraint replacement maps that mode to the UI aspect ratio slider. Runs before Initialize builds the dropdown
-/// from m_allowedUIAspectModes / m_uiAspectModeNames.
-/// The original resets the saved mode to Native when it is not in its list (Custom never is), so the saved value is
-/// captured in a prefix and restored afterwards.
-/// </summary>
+/// <summary>Adds the Custom UI aspect mode to the dropdown and keeps a saved Custom mode (see docs/internal.md).</summary>
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.InitializeUIAspectModes))]
 internal static class InitializeUIAspectModesPatch
 {
@@ -181,7 +166,7 @@ internal static class InitializeUIAspectModesPatch
     }
 }
 
-/// <summary>Adds our sliders to the Display tab once the game has built it.</summary>
+/// <summary>Adds our rows to the Display tab.</summary>
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.Initialize))]
 internal static class DisplaySettingsTabInitializePatch
 {

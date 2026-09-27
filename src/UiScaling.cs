@@ -5,19 +5,12 @@ using UnityEngine.UIElements;
 
 namespace MoreAspectRatios;
 
-/// <summary>
-/// Canvas and panel scaling.
-///  - HUD canvases (fallback DPI 96): the game's own ScaleWithScreenSize result times HudScalePercent.
-///  - Menu canvases (fallback DPI 221.5): the game's result, but never larger than what fits the HUD box
-///    (box width / 1920 reference width), so a 1920-wide menu is never cropped by a narrow box.
-///  - UI Toolkit panels (map, fast travel, activities): same fit rule; they are not inside the box, but they were
-///    designed for its width.
-/// </summary>
+/// <summary>Canvas scale overrides (HUD / menu) and PanelSettings fitting.</summary>
 internal static class UiScaling
 {
     // ---- uGUI -------------------------------------------------------------------------------------------------
 
-    /// <summary>Unity's CanvasScaler.HandleScaleWithScreenSize formula (UnityEngine.UI source), before any of our changes.</summary>
+    /// <summary>Unity's own CanvasScaler.HandleScaleWithScreenSize result.</summary>
     public static float GameCanvasScale(CanvasScaler s, Vector2 screen)
     {
         Vector2 refRes = s.referenceResolution;
@@ -59,7 +52,7 @@ internal static class UiScaling
         return Mathf.Approximately(target, game) ? null : target;
     }
 
-    /// <summary>Menu scale: the game's value, capped so the reference width fits the HUD box, times the Menu Size slider.</summary>
+    /// <summary>Menu scale: the game's value, capped to fit the UI box, times Menu UI Size.</summary>
     private static float MenuTarget(float game, Vector2 refRes)
     {
         float target = game;
@@ -86,7 +79,7 @@ internal static class UiScaling
     private struct PanelOriginal { public PanelScaleMode Mode; public float Scale; }
     private static readonly Dictionary<int, PanelOriginal> _panelOriginals = new Dictionary<int, PanelOriginal>();
 
-    /// <summary>Unity's PanelSettings.ResolveScale denominator for ScaleWithScreenSize (= the uGUI-style scale factor).</summary>
+    /// <summary>Unity's own ScaleWithScreenSize factor for a PanelSettings.</summary>
     public static float GamePanelScale(PanelSettings p, Vector2 screen)
     {
         Vector2 refRes = p.referenceResolution;
@@ -105,8 +98,7 @@ internal static class UiScaling
         }
     }
 
-    /// <summary>Re-evaluate every loaded PanelSettings asset. Assets that load later (activity / map screens) are caught
-    /// by the UIDocument.OnEnable postfix, which calls ApplyPanel for the document's settings.</summary>
+    /// <summary>Re-evaluate every loaded PanelSettings asset.</summary>
     public static void ApplyPanels()
     {
         int found = 0, changed = 0, restored = 0;
@@ -120,7 +112,7 @@ internal static class UiScaling
             MoreAspectRatiosMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the UI box, " + restored + " restored");
     }
 
-    /// <summary>Put every panel we touched back to the game's settings (hot reload / mod unload).</summary>
+    /// <summary>Restore every panel we changed.</summary>
     public static void RestorePanels()
     {
         foreach (var p in Resources.FindObjectsOfTypeAll<PanelSettings>())
@@ -164,7 +156,6 @@ internal static class UiScaling
         if (target.HasValue)
         {
             if (p.scaleMode == PanelScaleMode.ConstantPixelSize && Mathf.Approximately(p.scale, target.Value)) return 0;
-            // ConstantPixelSize: ResolveScale returns 1/scale, i.e. 'scale' behaves like a uGUI scale factor.
             p.scaleMode = PanelScaleMode.ConstantPixelSize;
             p.scale = target.Value;
             MoreAspectRatiosMod.Log.Msg("PanelSettings '" + p.name + "': scale " + target.Value.ToString("0.000") + " (fit to UI box, Menu UI Size applied)");

@@ -6,7 +6,6 @@ namespace MoreAspectRatios.Patches;
 [HarmonyPatch(typeof(UIAspectConstraint), nameof(UIAspectConstraint.ApplyConstraint))]
 internal static class ApplyConstraintPatch
 {
-    // GetTargetAspect is inlined into ApplyConstraint in the shipped build, so the whole method is replaced.
     static bool Prefix(UIAspectConstraint __instance)
     {
         if (!Prefs.Enabled.Value) return true;
@@ -15,8 +14,7 @@ internal static class ApplyConstraintPatch
     }
 }
 
-/// <summary>The UI Aspect dropdown (and our own re-apply) go through SetGlobalMode. The uGUI boxes follow by
-/// themselves; UI Toolkit panels and boxes are ours to update.</summary>
+/// <summary>Refits UI Toolkit panels and boxes when the UI aspect mode changes.</summary>
 [HarmonyPatch(typeof(UIAspectConstraint), nameof(UIAspectConstraint.SetGlobalMode))]
 internal static class SetGlobalModePatch
 {

@@ -3,8 +3,7 @@ using UnityEngine.UIElements;
 
 namespace MoreAspectRatios.Patches;
 
-/// <summary>UI Toolkit screens (map, fast travel, bounty/challenge boards) load their PanelSettings asset with the
-/// screen, after our scene-load pass, and rebuild their root element on enable. Fit the panel and box the root then.</summary>
+/// <summary>Fits and boxes UI Toolkit screens when they enable.</summary>
 [HarmonyPatch(typeof(UIDocument), "OnEnable")]
 internal static class UIDocumentOnEnablePatch
 {

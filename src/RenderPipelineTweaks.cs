@@ -3,8 +3,7 @@ using UnityEngine.Rendering;
 
 namespace MoreAspectRatios;
 
-/// <summary>The render pipeline letterboxes the world to 16:9 when MoonRenderPipelineAsset.Enforce169Aspect says so
-/// (InBuilds is the shipped value). Setting the asset field to Never removes the black bars.</summary>
+/// <summary>Turns off the 16:9 letterbox.</summary>
 internal static class RenderPipelineTweaks
 {
     private static bool _warned;

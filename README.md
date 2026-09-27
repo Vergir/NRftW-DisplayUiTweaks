@@ -15,7 +15,7 @@ Out of the box:
 * No black 16:9 bars around the world on non-16:9 screens.
 * Menus shrink to fit the UI box instead of being cut off.
 * The bounty and challenge boards and the map's detail bar stay inside the UI box as well. The game's UI Aspect option
-  only boxes parts of these screens.
+  only boxes parts of these screens. The map itself stays full-screen.
 
 New rows at the bottom of **Options > Display**:
 
@@ -66,13 +66,6 @@ rows above it has switches for each feature (`UnlockResolutions`, `UnlockUiAspec
 * Game updates can move things around. If the mod stops working after an update, check the MelonLoader log
   (`<game>/MelonLoader/Latest.log`) and open an issue.
 
-## Known limitations
-
-* The map itself and the fast-travel map stay full-screen (their markers sit on top of map tiles that are not boxed).
-  Only the map's detail bar is boxed.
-* The inventory and community chest pick their compare-panel layout from the monitor's shape in Custom mode, like the
-  game does for every mode except its own 16:9.
-
 ## Build
 
 Requires a .NET SDK (6 or newer) and MelonLoader installed in the game (so `MelonLoader/Il2CppAssemblies` exists).
@@ -86,27 +79,7 @@ installed elsewhere). `pwsh ./package.ps1` builds the release zip into `dist/`.
 
 ## How it works
 
-* `UIAspectConstraint.ApplyConstraint` is replaced (Harmony prefix): the Custom mode uses the slider aspect, and screens
-  with a fixed-size root are stretched instead of boxed. `SetGlobalMode` is postfixed so everything else follows a UI
-  Aspect change.
-* `CanvasScaler.HandleScaleWithScreenSize` is prefixed: HUD canvases (fallback DPI 96) get the game's scale times HUD &
-  Dialogue UI Size; menu canvases (fallback DPI 221.5) are capped so 1920x1080 fits the UI box, times Menu UI Size.
-* UI Toolkit: `PanelSettings` get the same fit, applied when a `UIDocument` enables. The game gives these screens a
-  `ui-aspect-*` USS class, but its style sheets only use it for the activity bottom bar and the map's chunk details, so
-  the mod boxes the activity documents' root and caps the chunk-details width with inline styles.
-* `DisplaySettingsTab.InitializeAvailableResolutions` is wrapped: the game's own resolution apply is deferred until the
-  list is rebuilt from `Screen.resolutions`; then the saved resolution is selected, and applied if the window differs
-  from it. The saved UI aspect mode is captured before `InitializeUIAspectModes` and restored, because the game resets
-  an unknown mode to Native.
-* `DisplaySettingsTab.Initialize` is postfixed to add the rows through the game's own
-  `SettingsScreenControls.AddSliderItem` / `AddActualDropDownItem`.
-* The letterbox is a flag on `MoonRenderPipelineAsset`. The UI aspect dropdown is unlocked through the game's own
-  `s_forceShowUIAspectSettingForTesting` / `s_forceAllUIAspectModesForTesting` switches; the "Custom" entry is
-  appended in an `InitializeUIAspectModes` postfix.
-* Supports [MelonLoader HotReload](../MelonLoader_HotReload): all patches go through the mod's `HarmonyInstance`;
-  `OnDeinitializeMelon` removes the settings rows, inline styles and panel changes, and the new build re-applies on
-  init. The game only builds a settings screen when a scene loads, so the new build adds its rows to the live screens
-  itself.
+See [docs/internal.md](docs/internal.md).
 
 ## License
 

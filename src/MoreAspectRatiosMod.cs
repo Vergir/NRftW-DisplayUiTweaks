@@ -3,20 +3,12 @@ using MelonLoader;
 using MoreAspectRatios;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "1.0.1", "Vergir")]
+[assembly: MelonInfo(typeof(MoreAspectRatiosMod), "MoreAspectRatios", "1.0.0", "Vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
 namespace MoreAspectRatios;
 
-/// <summary>
-/// No Rest for the Wicked on any aspect ratio:
-///  - every display resolution selectable in Options > Display,
-///  - the 'UI aspect' option always available with all modes,
-///  - no 16:9 letterbox on non-16:9 screens,
-///  - menu canvases and UI Toolkit screens (bounty/challenge boards, map details) kept inside the UI box,
-///  - HUD & Dialogue UI Size, Menu UI Size, Custom UI Aspect Ratio and 'Box Bounty Boards & Map Details' rows in Options > Display.
-/// Successor of the GameAssembly.dll byte patches (see repo README).
-/// </summary>
+/// <summary>Entry point. See docs/internal.md.</summary>
 public class MoreAspectRatiosMod : MelonMod
 {
     public static MoreAspectRatiosMod Instance { get; private set; } = null!;
@@ -25,7 +17,7 @@ public class MoreAspectRatiosMod : MelonMod
     private int _lastW, _lastH;
     private static string? _pendingReason;
     private static float _applyAt;
-    private const float SceneApplyDelay = 0.5f;   // the world streams many additive scenes; apply once per burst
+    private const float SceneApplyDelay = 0.5f;   // one re-apply per burst of additive scene loads
 
     public override void OnInitializeMelon()
     {
@@ -39,7 +31,7 @@ public class MoreAspectRatiosMod : MelonMod
 
         if (Prefs.UnlockUiAspectModes.Value)
         {
-            // The game's own debug switches: show the UI aspect setting regardless of monitor aspect, with all modes.
+            // The game's own debug switches: always show the UI aspect option, with all modes.
             DisplaySettingsTab.s_forceShowUIAspectSettingForTesting = true;
             DisplaySettingsTab.s_forceAllUIAspectModesForTesting = true;
         }
@@ -47,10 +39,9 @@ public class MoreAspectRatiosMod : MelonMod
         HarmonyInstance.PatchAll(typeof(MoreAspectRatiosMod).Assembly);
         LoggerInstance.Msg("Patches applied.");
 
-        // After a hot reload the game is already running: re-apply to what is on screen now.
+        // After a hot reload: apply to what is on screen, and give the existing settings screens our rows.
         try { UiBox.ReapplyAllConstraints(); ApplyEverything("init"); }
         catch (System.Exception e) { LoggerInstance.Warning("Initial apply: " + e.Message); }
-        // The game builds its settings screens once per session, so after a hot reload they have to be given our rows here.
         if (Prefs.AddSettingsRows.Value)
         {
             try { SettingsRows.AddToLiveScreens(); }
@@ -58,9 +49,7 @@ public class MoreAspectRatiosMod : MelonMod
         }
     }
 
-    /// <summary>Hot reload / unload: give the game back what is not a Harmony patch. The pipeline flag and the debug
-    /// switches are left as they are (harmless, and the next build sets them again). UIAspectConstraint layouts are
-    /// re-applied by the new build (or by the game's own ApplyConstraint once our prefix is gone).</summary>
+    /// <summary>Unload / hot reload: undo what is not a Harmony patch.</summary>
     public override void OnDeinitializeMelon()
     {
         try { UiScaling.RestorePanels(); }
@@ -97,7 +86,7 @@ public class MoreAspectRatiosMod : MelonMod
         }
     }
 
-    /// <summary>Everything that is not a Harmony hook: pipeline flag and UI Toolkit panels. Cheap, safe to repeat.</summary>
+    /// <summary>Re-applies the non-Harmony changes. Safe to repeat.</summary>
     public static void ApplyEverything(string reason)
     {
         if (!reason.StartsWith("scene")) Log.Msg("Applying (" + reason + ")");
@@ -110,7 +99,6 @@ public class MoreAspectRatiosMod : MelonMod
     public static void OnLayoutPrefChanged()
     {
         Prefs.Save();
-        UiBox.ReapplyAllConstraints();   // SetGlobalMode postfix also refits panels and UI Toolkit boxes
-        // CanvasScalers pick the new values up on their next Handle() (every frame).
+        UiBox.ReapplyAllConstraints();   // canvas scalers pick new values up on their own every frame
     }
 }

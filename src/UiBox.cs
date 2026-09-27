@@ -3,21 +3,7 @@ using UnityEngine;
 
 namespace MoreAspectRatios;
 
-/// <summary>
-/// The UI box: UIAspectConstraint fits the UI root into a box of a given aspect. Game modes: Native = stretch to the
-/// screen, 16:9 / 21:9 / 32:9 = fixed boxes, Custom = per-instance aspect the game never exposes in the UI.
-/// We give "Custom" a meaning (the Custom UI Aspect Ratio slider) and stretch constraints whose parent is not
-/// screen-shaped (fixed-size roots) instead of boxing them.
-///
-/// C# transcription of the original ApplyConstraint (build 29466, RVA 0x8C22FC0):
-///   parent = GetParentSize(); if (parent.x <= 0 || parent.y <= 0) return;
-///   mode = (m_useGlobalMode && Application.isPlaying) ? s_globalMode : m_mode;
-///   if (mode == Native) { ApplyStretchToParent(rt); w = parent.x; h = parent.y; }
-///   else { target = aspect(mode);
-///          if (parent.x/parent.y > target) { w = parent.y*target; h = parent.y; } else { w = parent.x; h = parent.x/target; }
-///          rt.anchorMin = rt.anchorMax = rt.pivot = (0.5,0.5); rt.anchoredPosition = 0; rt.sizeDelta = (w,h); }
-///   ApplySafeZone(w, h);
-/// </summary>
+/// <summary>The UI box: replacement for UIAspectConstraint.ApplyConstraint (see docs/internal.md).</summary>
 internal static class UiBox
 {
     private const float Aspect16x9 = 1.7777778f;
@@ -68,8 +54,7 @@ internal static class UiBox
 
         UIAspectMode mode = (c.m_useGlobalMode && Application.isPlaying) ? UIAspectConstraint.s_globalMode : c.m_mode;
 
-        // A constraint whose parent does not have the screen's aspect sits under a fixed-size root (1920x1080 in this game:
-        // scribe table, inspect player). Boxing those crops their content, so stretch to the root instead.
+        // Parent not screen-shaped = fixed-size root (scribe table, inspect player): stretch instead of box.
         if (Prefs.StretchMismatchedRoots.Value && mode != UIAspectMode.Native)
         {
             float screenAspect = (float)Screen.width / Screen.height;
@@ -99,7 +84,7 @@ internal static class UiBox
         c.ApplySafeZone(box.x, box.y);
     }
 
-    /// <summary>Force every live constraint to re-apply (SetGlobalMode calls ApplyIfNeeded(force) on all instances).</summary>
+    /// <summary>Re-apply every live constraint.</summary>
     public static void ReapplyAllConstraints()
     {
         UIAspectConstraint.SetGlobalMode(UIAspectConstraint.s_globalMode);

@@ -3,9 +3,7 @@ using UnityEngine.UI;
 
 namespace MoreAspectRatios.Patches;
 
-/// <summary>CanvasScaler.Handle() calls this every frame for ScaleWithScreenSize canvases. When we have an override we
-/// do what the original does (SetScaleFactor + SetReferencePixelsPerUnit) with our value and skip it; otherwise the
-/// game's code runs untouched.</summary>
+/// <summary>Applies our canvas scale, or lets the game's code run when there is no override.</summary>
 [HarmonyPatch(typeof(CanvasScaler), "HandleScaleWithScreenSize")]
 internal static class HandleScaleWithScreenSizePatch
 {

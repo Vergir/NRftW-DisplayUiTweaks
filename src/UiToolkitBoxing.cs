@@ -3,23 +3,9 @@ using Il2CppMoon.Forsaken;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-
 namespace MoreAspectRatios;
 
-/// <summary>
-/// The game's UI aspect option only boxes uGUI. UI Toolkit screens get a USS class per mode instead
-/// (ui-aspect-native / -16x9 / -21x9 / -32x9 / -custom), and the style sheets use it for one element each:
-///   ActivityWindow.uss: .activity-screen.ui-aspect-16x9 .activity-screen-bottom-bar { width: 1920px; centered }
-///   Map.uss:            .chunk-details-aspect-inner.ui-aspect-16x9 { max-width: 1920px }
-/// The rest of those screens always spans the whole screen.
-///
-/// We box them ourselves with inline styles, which win over style sheets:
-///  - the bounty/challenge boards (ActivityScreenPanel, ActivityVendorScreenPanel): the document's root element is
-///    positioned absolutely inside the UI box (percent of the panel, so it is independent of the panel scale);
-///  - the map (MapScreen): only the chunk-details bar gets a max-width, because the map itself is world-like and its
-///    markers are laid over uGUI map tiles that are not boxed.
-/// Styles are removed again when the box covers the whole screen, and on unload.
-/// </summary>
+/// <summary>Boxes the bounty/challenge boards and the map's detail bar with inline styles (see docs/internal.md).</summary>
 internal static class UiToolkitBoxing
 {
     private const string ChunkDetailsInnerClass = "chunk-details-aspect-inner";
@@ -110,7 +96,7 @@ internal static class UiToolkitBoxing
         var inner = UQueryExtensions.Q(root, null, ChunkDetailsInnerClass);
         if (inner == null) return;
         if (!Active) { inner.style.maxWidth = new StyleLength(StyleKeyword.Null); return; }
-        // Its parent (.chunk-details-aspect-root) spans the panel from left 0 to right 0, so percent = share of the screen.
+        // The parent spans the whole panel, so percent = share of the screen.
         float pct = UiBox.GlobalBoxSizePx().x / Screen.width * 100f;
         inner.style.maxWidth = new StyleLength(new Length(pct, LengthUnit.Percent));
         if (!Contains(_cappedElements, inner)) _cappedElements.Add(inner);
