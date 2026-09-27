@@ -11,8 +11,8 @@ namespace DisplayUiTweaks;
 internal static class SettingsRows
 {
     private const string Prefix = "DUT_";
-    private const string HudId = "DUT_HudScale", MenuId = "DUT_MenuScale", BoxId = "DUT_BoxAspect", BoxToolkitId = "DUT_BoxUiToolkit";
-    private static readonly string[] AllIds = { HudId, MenuId, BoxId, BoxToolkitId };
+    private const string SpacerId = "DUT_Spacer", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale", BoxId = "DUT_BoxAspect", BoxToolkitId = "DUT_BoxUiToolkit";
+    private static readonly string[] AllIds = { SpacerId, HudId, MenuId, BoxId, BoxToolkitId };
 
     private static readonly Dictionary<string, LocalizedMessage> _messages = new Dictionary<string, LocalizedMessage>();
 
@@ -45,6 +45,8 @@ internal static class SettingsRows
             return;
         }
         RemoveRegistryEntries(controls);
+
+        AddSpacer(controls, content);
 
         AddSlider(controls, content, HudId,
             Msg(HudId, "HUD & Dialogue UI Size"),
@@ -178,6 +180,19 @@ internal static class SettingsRows
         int before = content.childCount;
         controls.AddActualDropDownItem(PlayerSettingCategory.Display, name, arr, current, onChanged, desc, true, false);
         NameNewRow(content, before, id);
+    }
+
+    /// <summary>The same empty divider row the game uses between its own groups.</summary>
+    private static void AddSpacer(SettingsScreenControls controls, RectTransform content)
+    {
+        int before = content.childCount;
+        controls.AddDividerItem(PlayerSettingCategory.Display, SpacerId);
+        NameNewRow(content, before, SpacerId);
+        if (content.childCount > before)
+        {
+            var row = content.GetChild(content.childCount - 1).GetComponent<SettingsItemGUIBase>();
+            if (row != null && row.SettingLabel != null) row.SettingLabel.text = "";
+        }
     }
 
     private static void NameNewRow(RectTransform content, int before, string id)
