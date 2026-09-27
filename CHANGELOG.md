@@ -11,4 +11,4 @@ First public release.
 * Menus and UI Toolkit panels shrink to fit the UI box.
 * Bounty and challenge boards and the map's detail bar kept inside the UI box (toggle).
 * New rows in Options > Display: HUD & Dialogue UI Size, Menu UI Size, Custom UI Aspect Ratio,
-  Box Bounty Boards & Map Details.
+  Bounty Board & Map Fix.

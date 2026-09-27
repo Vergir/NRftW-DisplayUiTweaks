@@ -70,8 +70,8 @@ internal static class SettingsRows
             v => { Prefs.UiBoxAspect.Value = Mathf.Round(v * 100f) / 100f; DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
         AddDropdown(controls, content, BoxToolkitId,
-            Msg(BoxToolkitId, "Box Bounty Boards & Map Details"),
-            Msg(BoxToolkitId + "_Desc", "Keep the bounty and challenge boards and the map's detail bar inside the UI box. The game's UI Aspect option only boxes parts of these screens (Display & UI Tweaks)."),
+            Msg(BoxToolkitId, "Bounty Board & Map Fix"),
+            Msg(BoxToolkitId + "_Desc", "Keeps the bounty and challenge boards and the map's detail bar inside the UI box like the other menus. The game only boxes parts of these screens. Turn off to see them as the game draws them (Display & UI Tweaks)."),
             new[] { "Off", "On" },
             Prefs.BoxUiToolkitScreens.Value ? 1 : 0,
             i => { Prefs.BoxUiToolkitScreens.Value = i == 1; DisplayUiTweaksMod.OnLayoutPrefChanged(); });

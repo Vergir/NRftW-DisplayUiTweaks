@@ -69,11 +69,15 @@ ApplySafeZone(w, h);
 same logic plus two changes:
 
 * Custom uses the Custom UI Aspect Ratio slider.
-* A constraint whose parent is not screen-shaped is stretched to that parent instead of boxed. The recipe screens
-  (`learnedRecipesScreen`, `researchRecipesScreen`) and `inspectPlayerScreen` have a fixed 1920x1080 root; boxing
-  those to a narrow box cuts their content off. Their size comes from the menu canvas scale alone, so when they come
-  out larger than the box (Menu UI Size above 100%, or a box narrower than 16:9 with height-limited scaling) the
-  constrained element is scaled down (`localScale`) to fit the box. Undone on unload.
+* The box is the overlap of the parent with the screen's UI box, in pixels (canvas scale taken from the scaler the
+  mod computes, so it is right in the frame a setting changes). For a screen-sized parent that equals the game's rule.
+  The game's rule fits the aspect inside the *parent*, which breaks parents that are not screen-sized:
+  * full-width parents with their own height (the Knowledge screen `learnedRecipesScreen`, the status screen, the
+    compendium) would get a box sized from their height;
+  * fixed 1920x1080 roots (`researchRecipesScreen`, `inspectPlayerScreen`) were squashed to 1080 wide under a square
+    box, cutting their left-anchored content off.
+  Fixed-size parents (anchors collapsed, so their size does not follow the screen) keep their size and are scaled down (`localScale`,
+  never up) only when they are larger than the box, e.g. with Menu UI Size above 100%. Undone on unload.
 
 `SetGlobalMode(mode)` re-applies every live constraint; the mod calls it to refresh after a slider change, and
 postfixes it so UI Toolkit panels follow a UI Aspect change.

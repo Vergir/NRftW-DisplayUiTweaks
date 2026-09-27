@@ -48,9 +48,9 @@ internal static class Prefs
         FitPanelsToBox = _cat.CreateEntry("FitPanelsToBox", true,
             description: "Same for UI Toolkit panels (map, fast travel, bounty and challenge boards).");
         BoxUiToolkitScreens = _cat.CreateEntry("BoxUiToolkitScreens", true,
-            description: "Keep the bounty/challenge boards and the map's detail bar inside the UI box (the game's UI aspect option only boxes parts of these UI Toolkit screens). Also a row in Options > Display.");
+            description: "Bounty Board & Map Fix: keep the bounty and challenge boards and the map's detail bar inside the UI box like the other menus (the game only boxes parts of these screens). Also a row in Options > Display.");
         StretchMismatchedRoots = _cat.CreateEntry("StretchMismatchedRoots", true,
-            description: "Screens with a fixed-size root (scribe table, inspect player) are stretched to that root instead of boxed, so their content is not cut off.");
+            description: "Box screens whose root is not screen-sized by their overlap with the UI box instead of the game's aspect-in-parent rule; fixed-size screens (scribe table, inspect player) keep their layout and shrink only to fit.");
         MenuDpiThreshold = _cat.CreateEntry("MenuDpiThreshold", 100f,
             description: "CanvasScaler.fallbackScreenDPI above this counts as a menu canvas (game: 96 = HUD, 221.5 = menus).");
         AddSettingsRows = _cat.CreateEntry("AddSettingsRows", true,

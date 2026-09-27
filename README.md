@@ -24,7 +24,7 @@ New rows at the bottom of **Options > Display**:
 | HUD & Dialogue UI Size | 10-150% | 100% | In-game HUD, overlays and dialogue. |
 | Menu UI Size | 10-150% | 100% | Inventory, stats, map, settings and the other menus. |
 | Custom UI Aspect Ratio | 1.00-4.00 | 1.78 | Width-to-height ratio the whole UI is kept in when UI Aspect Mode is "Custom (Display & UI Tweaks)". 1.00 = square, 1.78 = 16:9, 2.33 = 21:9. |
-| Box Bounty Boards & Map Details | Off / On | On | Keep those screens inside the UI box. |
+| Bounty Board & Map Fix | On / Off | On | Keeps the bounty and challenge boards and the map's detail bar inside the UI box like the other menus. Turn off to see them as the game draws them. |
 
 With the defaults on a 16:9 monitor the game looks exactly as before; the mod only adds options.
 

@@ -59,55 +59,61 @@ internal static class UiBox
 
         UIAspectMode mode = (c.m_useGlobalMode && Application.isPlaying) ? UIAspectConstraint.s_globalMode : c.m_mode;
         RectTransform rt = c.m_rectTransform;
+        float target = TargetAspect(mode);
 
-        // Parent not screen-shaped = fixed-size root (recipe screens, inspect player): stretch to it instead of
-        // boxing (boxing cuts its content off), and shrink it if it comes out larger than the box.
-        bool fixedRoot = false;
-        if (Prefs.StretchMismatchedRoots.Value)
+        if (target <= 0f)
         {
-            float screenAspect = (float)Screen.width / Screen.height;
-            float parentAspect = parent.x / parent.y;
-            fixedRoot = Mathf.Abs(parentAspect - screenAspect) > 0.02f;
-        }
-        if (fixedRoot)
-        {
-            if (rt != null)
-            {
-                UIAspectConstraint.ApplyStretchToParent(rt);
-                FitFixedRoot(c, rt, parent);
-            }
+            if (rt != null) { Unfit(rt); UIAspectConstraint.ApplyStretchToParent(rt); }
             c.ApplySafeZone(parent.x, parent.y);
             return;
         }
-        if (rt != null) Unfit(rt);
 
-        float target = TargetAspect(mode);
         Vector2 box;
-        if (target <= 0f)
+        if (!Prefs.StretchMismatchedRoots.Value)
         {
-            if (rt != null) UIAspectConstraint.ApplyStretchToParent(rt);
-            box = parent;
+            box = FitBox(parent, target);   // the game's rule: the aspect box inside the parent
+            if (rt != null) Unfit(rt);
         }
         else
         {
-            box = FitBox(parent, target);
-            if (rt != null)
+            // The box is the overlap of the parent with the screen's UI box, measured in pixels. For a screen-sized
+            // parent that is the game's rule; parents that are only partly screen-sized (full width, own height) or
+            // fixed-size (1920x1080 roots) keep their own size wherever it is already inside the box.
+            float cs = ExpectedCanvasScale(c, rt);
+            Vector2 screen = new Vector2(Screen.width, Screen.height);
+            Vector2 boxPx = FitBox(screen, target);
+            Vector2 parentPx = parent * cs;
+            // Fixed-size = the parent does not stretch with its own parent (anchors collapsed on both axes), is not a
+            // canvas root, and is clearly smaller than the screen.
+            var prt = rt != null ? rt.parent?.TryCast<RectTransform>() : null;
+            bool fixedSize = prt != null && prt.anchorMin == prt.anchorMax
+                && prt.GetComponent<Canvas>() == null
+                && parentPx.x < screen.x * 0.98f && parentPx.y < screen.y * 0.98f;
+            if (fixedSize)
             {
-                var half = new Vector2(0.5f, 0.5f);
-                rt.anchorMin = half; rt.anchorMax = half; rt.pivot = half;
-                rt.anchoredPosition = Vector2.zero;
-                rt.sizeDelta = box;
+                // Its content is laid out for the parent's size: keep that size, shrink to fit if it is larger.
+                if (rt != null) { UIAspectConstraint.ApplyStretchToParent(rt); FitFixedRoot(rt, parentPx, boxPx); }
+                c.ApplySafeZone(parent.x, parent.y);
+                return;
             }
+            box = new Vector2(Mathf.Min(parent.x, boxPx.x / cs), Mathf.Min(parent.y, boxPx.y / cs));
+            if (rt != null) Unfit(rt);
+        }
+
+        if (rt != null)
+        {
+            var half = new Vector2(0.5f, 0.5f);
+            rt.anchorMin = half; rt.anchorMax = half; rt.pivot = half;
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = box;
         }
         c.ApplySafeZone(box.x, box.y);
     }
 
     /// <summary>Scales a fixed-size screen down so it fits the UI box (never up).</summary>
-    private static void FitFixedRoot(UIAspectConstraint c, RectTransform rt, Vector2 parent)
+    private static void FitFixedRoot(RectTransform rt, Vector2 parentPx, Vector2 boxPx)
     {
-        float canvasScale = ExpectedCanvasScale(c, rt);
-        Vector2 box = GlobalBoxSizePx();
-        float s = Mathf.Min(1f, box.x / (parent.x * canvasScale), box.y / (parent.y * canvasScale));
+        float s = Mathf.Min(1f, boxPx.x / parentPx.x, boxPx.y / parentPx.y);
         if (s >= 0.999f) { Unfit(rt); return; }
         rt.pivot = new Vector2(0.5f, 0.5f);
         if (Mathf.Abs(rt.localScale.x - s) > 0.001f)
@@ -130,14 +136,16 @@ internal static class UiBox
         _fitted.Clear();
     }
 
-    /// <summary>The canvas scale this screen gets this frame (the scaler may not have applied a new value yet).</summary>
-    private static float ExpectedCanvasScale(UIAspectConstraint c, RectTransform rt)
+    /// <summary>Screen pixels per canvas unit for this constraint, as the canvas will be scaled this frame
+    /// (the scaler may not have applied a new value yet).</summary>
+    private static float ExpectedCanvasScale(UIAspectConstraint c, RectTransform? rt)
     {
         var scaler = c.GetComponentInParent<CanvasScaler>();
         if (scaler != null && scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize)
             return UiScaling.OverrideCanvasScale(scaler) ?? UiScaling.GameCanvasScale(scaler, new Vector2(Screen.width, Screen.height));
-        var p = rt.parent;
-        return p != null && p.lossyScale.x > 0f ? p.lossyScale.x : 1f;
+        var canvas = c.GetComponentInParent<Canvas>();
+        if (canvas != null && canvas.rootCanvas != null && canvas.rootCanvas.scaleFactor > 0f) return canvas.rootCanvas.scaleFactor;
+        return 1f;
     }
 
     private static string ScreenName(Transform t)
