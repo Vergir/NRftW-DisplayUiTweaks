@@ -1,5 +1,7 @@
 # Display & UI Tweaks
 
+![Display & UI Tweaks](docs/pics/nexus/cover.jpg)
+
 A [MelonLoader](https://github.com/LavaGang/MelonLoader) mod for **No Rest for the Wicked** that makes the game work on
 any screen shape: ultrawide, 16:10, square, tall, and the Steam Deck. It adds UI size and UI aspect settings to the
 game's own Options menu.
@@ -34,6 +36,23 @@ With the defaults on a 16:9 monitor the game looks exactly as before; the mod on
 * **Square or tall monitor:** pick your resolution, set UI Aspect Mode to Custom and Custom UI Aspect Ratio to 1.00, then
   adjust HUD & Dialogue UI Size to taste.
 * **Steam Deck:** works as is; use the size sliders if the text is too small.
+
+## Screenshots
+
+HUD size, 75% / 100% / 125%:
+
+![HUD size](docs/pics/nexus/hud_size.jpg)
+
+Ultrawide: the game's 16:9 UI box and a custom one:
+
+![Ultrawide UI box](docs/pics/nexus/ultrawide_game_vs_custom.jpg)
+
+A 9:8 monitor without and with the mod:
+
+![Square monitor](docs/pics/nexus/square_before_after.jpg)
+
+More: [settings](docs/pics/nexus/settings.jpg), [custom ratios](docs/pics/nexus/ultrawide_custom_ratios.jpg),
+[menu](docs/pics/nexus/ultrawide_menu.jpg), [stats](docs/pics/nexus/ultrawide_stats.jpg).
 
 ## Install
 
