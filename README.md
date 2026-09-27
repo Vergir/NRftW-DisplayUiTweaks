@@ -58,7 +58,7 @@ More: [settings](docs/pics/nexus/settings.jpg), [custom ratios](docs/pics/nexus/
 
 1. Install [MelonLoader](https://github.com/LavaGang/MelonLoader/releases) **0.7.3** or newer into the game
    (`...\steamapps\common\NoRestForTheWicked`) and start the game once.
-2. Put `DisplayUiTweaks.dll` into the game's `Mods` folder (the release zip already has that layout: extract it into
+2. Put `DisplayUiTweaks.dll` into the game's `Mods` folder (the [release zip](https://github.com/Vergir/NRftW-DisplayUiTweaks/releases/latest) already has that layout: extract it into
    the game folder).
 
 ### Steam Deck / Linux (Proton)
