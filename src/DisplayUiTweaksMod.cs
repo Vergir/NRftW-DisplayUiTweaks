@@ -3,7 +3,7 @@ using MelonLoader;
 using DisplayUiTweaks;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.0.0", "Vergir")]
+[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.0.0", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 
 namespace DisplayUiTweaks;
