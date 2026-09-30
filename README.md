@@ -1,10 +1,12 @@
 # Display & UI Tweaks
 
-![Display & UI Tweaks](docs/pics/nexus/cover.jpg)
+![Display & UI Tweaks](docs/pics/nexus/header.jpg)
 
 A [MelonLoader](https://github.com/LavaGang/MelonLoader) mod for **No Rest for the Wicked** that makes the game work on
 any screen shape: ultrawide, 16:10, square, tall, and the Steam Deck. It adds UI size and UI aspect settings to the
 game's own Options menu.
+
+Download: [Nexus Mods](https://www.nexusmods.com/norestforthewicked/mods/102) · [GitHub releases](https://github.com/vergir/NRftW-DisplayUiTweaks/releases/latest)
 
 ## Features
 
