@@ -12,6 +12,7 @@ namespace DisplayUiTweaks;
 internal static class SettingsRows
 {
     public const string Prefix = "DUT_";
+    public const string UiAreaRowId = "DUT_UiArea";
     private const string SpacerId = "DUT_Spacer", AreaId = "DUT_UiArea", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale",
         EditId = "DUT_EditHud", ResetId = "DUT_ResetHud", HideId = "DUT_HideHud";
     // 1.0.0 rows (Custom UI Aspect Ratio, Bounty Board & Map Fix): only freed from the registry.
@@ -35,6 +36,9 @@ internal static class SettingsRows
     private static readonly Dictionary<string, LocalizedMessage> _messages = new Dictionary<string, LocalizedMessage>();
     private static readonly Dictionary<string, Func<float>> _sliderValues = new();
     private static readonly Dictionary<string, Func<int>> _dropdownValues = new();
+
+    /// <summary>The UI Area and HUD size rows of every settings screen (the settings preview watches their highlight).</summary>
+    public static readonly List<SettingsItemGUIBase> PreviewRows = new();
 
     /// <summary>
     /// The main menu and the game each have their own settings screen with their own copy of our rows; a row shows the
@@ -86,14 +90,14 @@ internal static class SettingsRows
             Msg(AreaId + "_Desc", AreaDescription),
             Prefs.UiAreaMin, Prefs.UiAreaMax, Prefs.UiAreaStep, () => Prefs.UiAreaValue,
             v => v.ToString("0.00"),
-            v => { Prefs.UiArea.Value = Mathf.Round(v * 100f) / 100f; DisplayUiTweaksMod.OnLayoutPrefChanged(); });
+            v => { Prefs.UiArea.Value = Mathf.Round(v * 100f) / 100f; DisplayUiTweaksMod.OnLayoutPrefChanged(); Hud.SettingsPreview.Poke(); });
 
         AddSlider(controls, content, HudId,
             Msg(HudId, "HUD & Dialogue UI Size"),
             Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue."),
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, () => Prefs.HudScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
-            v => { Prefs.HudScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); });
+            v => { Prefs.HudScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); Hud.SettingsPreview.Poke(); });
 
         AddSlider(controls, content, MenuId,
             Msg(MenuId, "Menu UI Size"),
@@ -212,6 +216,11 @@ internal static class SettingsRows
             false);                             // showOffOnZero
         NameNewRow(content, before, id);
         _sliderValues[id] = () => ToNormalized(current());
+        if ((id == AreaId || id == HudId) && content.childCount > before)
+        {
+            var row = content.GetChild(content.childCount - 1).GetComponent<SettingsItemGUIBase>();
+            if (row != null) { PreviewRows.RemoveAll(r => r == null); PreviewRows.Add(row); }
+        }
         // Held-key repeat interval: long enough that a normal key tap is exactly one step.
         if (content.childCount > before)
         {

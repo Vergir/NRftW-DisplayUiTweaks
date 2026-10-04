@@ -27,11 +27,17 @@ internal sealed class Widget
     /// layout): the editor never forces them visible.</summary>
     public bool KeepOwnGroups;
 
-    /// <summary>Offset in parts of the parent's size (the UI box for almost all), and scale factor.</summary>
+    /// <summary>The chat window: its size can be changed (sizeDelta), not only its scale.</summary>
+    public bool Resizable;
+    public readonly List<Vector2> OrigSize = new();
+
+    /// <summary>Offset in parts of the parent's size (the UI box for almost all), scale factor, and for resizable
+    /// elements a size factor per axis.</summary>
     public Vector2 Offset;
     public float Scale = 1f;
+    public Vector2 Size = Vector2.one;
 
-    public bool IsDefault => Offset.sqrMagnitude < 1e-10f && Mathf.Abs(Scale - 1f) < 1e-4f;
+    public bool IsDefault => Offset.sqrMagnitude < 1e-10f && Mathf.Abs(Scale - 1f) < 1e-4f && (Size - Vector2.one).sqrMagnitude < 1e-8f;
     public bool Alive => Parts.Count > 0 && Parts[0] != null;
 }
 
@@ -71,7 +77,7 @@ internal static class HudWidgets
         var list = new List<Widget>();
         foreach (var (id, name, paths) in Table)
         {
-            var w = new Widget { Id = id, Name = name, KeepOwnGroups = id == "Equipment" };
+            var w = new Widget { Id = id, Name = name, KeepOwnGroups = id == "Equipment", Resizable = id == "Chat" };
             foreach (var path in paths)
             {
                 if (path.EndsWith("/*"))
@@ -113,6 +119,7 @@ internal static class HudWidgets
         w.OrigScale.Add(rt.localScale);
         w.LastPos.Add(null);
         w.LastScale.Add(null);
+        w.OrigSize.Add(rt.sizeDelta);
         var group = rt.parent != null ? rt.parent.GetComponent<LayoutGroup>() : null;
         if (group != null && w.Group == null)
         {

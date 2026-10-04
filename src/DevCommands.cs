@@ -68,6 +68,42 @@ internal static class DevCommands
                         break;
                     }
                     case "menuoff": Hud.MenuHud.Destroy(); break;
+                    case "hud":
+                        Prefs.HudScalePercent.Value = float.Parse(a[1], System.Globalization.CultureInfo.InvariantCulture);
+                        DisplayUiTweaksMod.OnLayoutPrefChanged();
+                        break;
+                    case "find":
+                        foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>())
+                            if (go != null && go.name.StartsWith(a[1]) && go.scene.IsValid())
+                                DisplayUiTweaksMod.Log.Msg($"  {go.name} activeSelf {go.activeSelf} inHierarchy {go.activeInHierarchy} scene {go.scene.name}");
+                        break;
+                    case "options":
+                    {
+                        // In game: open Options, or close the player menu.
+                        var menu = UnityEngine.Object.FindObjectOfType<Il2Cpp.PlayerMenu>();
+                        if (menu == null) break;
+                        if (a.Length > 1 && a[1] == "close") menu.CloseMenu(Il2Cpp.PlayerMenuCloseBehaviour.UseClosedCallback);
+                        else menu.OpenMenuSelectorScreen(Il2Cpp.PlayerMenuScreenType.Settings, true, false);
+                        break;
+                    }
+                    case "select":
+                    {
+                        // Select one of our rows by name (as the mouse would), e.g. "select DUT_UiArea".
+                        foreach (var row in UnityEngine.Object.FindObjectsOfType<Il2CppMoon.Forsaken.SettingsItemGUIBase>())
+                            if (row != null && row.gameObject.name == a[1])
+                            {
+                                UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(row.gameObject);
+                                DisplayUiTweaksMod.Log.Msg("selected " + a[1]);
+                                break;
+                            }
+                        break;
+                    }
+                    case "chatsize":
+                        foreach (var w in Hud.HudLayout.Widgets)
+                            if (w.Resizable)
+                                Hud.HudLayout.ResizeTo(w, new Vector2(float.Parse(a[1], System.Globalization.CultureInfo.InvariantCulture),
+                                                                      float.Parse(a[2], System.Globalization.CultureInfo.InvariantCulture)));
+                        break;
                     case "pad":
                     {
                         // Flip Show Controller HUD in memory and let the equipment HUD re-evaluate its layout.
@@ -77,6 +113,60 @@ internal static class DevCommands
                         acc.ShowControllerHUD = a.Length > 1 && a[1] == "on";
                         hud.playerEquipmentHUD?.ForceFullInputHUDReevaluation();
                         DisplayUiTweaksMod.Log.Msg($"ShowControllerHUD {acc.ShowControllerHUD}");
+                        break;
+                    }
+                    case "chatinfo":
+                    {
+                        var h = Hud.HudLayout.LiveHud;
+                        var c = h != null ? h.ChatWindow : null;
+                        if (c == null) break;
+                        var rt = c.GetComponent<RectTransform>();
+                        var rows = c.m_messageQueue;
+                        var row = rows != null && rows.Count > 0 ? rows[0] : null;
+                        DisplayUiTweaksMod.Log.Msg($"  chat size {rt.sizeDelta} scale {rt.localScale} lossy {rt.lossyScale} rootScale {c.GetComponentInParent<Canvas>().rootCanvas.scaleFactor}" +
+                            $" rowFont {(row != null && row.m_text != null ? row.m_text.fontSize + " auto " + row.m_text.enableAutoSizing + " lossy " + row.m_text.transform.lossyScale : "-")}");
+                        var holder = c.transform.Find("history/DUT_ChatSamples") ?? c.transform.Find("history/scrollView/viewport/DUT_ChatSamples");
+                        if (holder != null) DisplayUiTweaksMod.Log.Msg($"  holder local {holder.localPosition} world {holder.position} scale {holder.localScale} rot {holder.localRotation.eulerAngles}; chat world {rt.position} cam {c.GetComponentInParent<Canvas>().rootCanvas.worldCamera?.orthographic}");
+                        foreach (var t in c.GetComponentsInChildren<Il2CppTMPro.TextMeshProUGUI>(false))
+                            if (t.name == "line" && t.gameObject.activeInHierarchy)
+                                DisplayUiTweaksMod.Log.Msg($"  z local {t.transform.localPosition.z} world {t.transform.position}; sample font {t.fontSize} lossy {t.transform.lossyScale} rect {t.rectTransform.rect} pos {t.rectTransform.anchoredPosition} bounds {t.bounds} text {t.textBounds.size} pref {t.preferredHeight} lines {t.textInfo?.lineCount} '{t.text[..System.Math.Min(20, t.text.Length)]}'");
+                        break;
+                    }
+                    case "findtext":
+                        foreach (var t in Resources.FindObjectsOfTypeAll<Il2CppTMPro.TMP_Text>())
+                            if (t != null && t.text != null && t.text.Contains(a[1]) && t.gameObject.scene.IsValid())
+                            {
+                                string tpath = t.name;
+                                for (var p = t.transform.parent; p != null; p = p.parent) tpath = p.name + "/" + tpath;
+                                var cv = t.canvas;
+                                DisplayUiTweaksMod.Log.Msg($"  {tpath} active {t.gameObject.activeInHierarchy} canvas {(cv != null ? cv.rootCanvas.name + "/" + cv.rootCanvas.renderMode + "/" + cv.rootCanvas.sortingOrder : "-")} lossy {t.transform.lossyScale}");
+                            }
+                        break;
+                    case "chattest":
+                    {
+                        // A translucent red rectangle stretched over the chat window: does the window draw where its rect is?
+                        var c = Hud.HudLayout.LiveHud?.ChatWindow;
+                        if (c == null) break;
+                        var old = c.transform.Find("DUT_Test");
+                        if (old != null) { UnityEngine.Object.Destroy(old.gameObject); break; }
+                        var go = new GameObject("DUT_Test");
+                        var rt = go.AddComponent<RectTransform>();
+                        rt.parent = c.transform;
+                        go.layer = c.gameObject.layer;
+                        rt.localScale = Vector3.one; rt.localRotation = Quaternion.identity;
+                        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero; rt.anchoredPosition3D = Vector3.zero;
+                        var img = go.AddComponent<UnityEngine.UI.Image>();
+                        img.color = new Color(1f, 0f, 0f, 0.35f);
+                        img.raycastTarget = false;
+                        break;
+                    }
+                    case "chatcanvas":
+                    {
+                        var c = Hud.HudLayout.LiveHud?.ChatWindow;
+                        var cv = c != null ? c.GetComponent<Canvas>() : null;
+                        if (cv == null) break;
+                        DisplayUiTweaksMod.Log.Msg($"  chatWindow canvas scaleFactor {cv.scaleFactor} root {cv.rootCanvas.scaleFactor} override {cv.overrideSorting} pixelPerfect {cv.pixelPerfect} renderMode {cv.renderMode} lossy {cv.transform.lossyScale} rootLossy {cv.rootCanvas.transform.lossyScale}");
+                        if (a.Length > 1 && a[1] == "toggle") { cv.enabled = false; cv.enabled = true; }
                         break;
                     }
                     case "pos":

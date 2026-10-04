@@ -244,6 +244,14 @@ internal static class MenuHud
     /// <summary>The two equipment layouts are shown / hidden through their CanvasGroups: leave those as EquipmentLayout set them.</summary>
     private static bool IsEquipmentLayout(Transform t) => t.name is "playerEquipment" or "playerEquipmentPC" && t.parent != null && t.parent.name == "aspectRatio";
 
+    public static bool Exists => _holder != null;
+
+    /// <summary>Show / hide a built copy without rebuilding it (the settings preview).</summary>
+    public static void SetVisible(bool visible)
+    {
+        if (_holder != null) _holder.SetActive(visible);
+    }
+
     public static void Destroy()
     {
         if (_holder == null) { var old = GameObject.Find(HolderName); if (old != null) _holder = old; }

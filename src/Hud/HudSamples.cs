@@ -32,10 +32,21 @@ internal static class HudSamples
     private static readonly List<(TMP_Text t, string text)> _texts = new();
     private static bool _recording, _chatFaked;
 
+    /// <summary>Oldest first. Some are long enough to wrap in the game's default chat width, so a wider chat shows the
+    /// difference.</summary>
     public static readonly string[] ChatLines =
     {
-        "vergir died", "Ana joined the game", "Ana: anyone up for the crucible?", "vergir: sure, give me a minute",
-        "Bram died", "Bram: that boss hits hard", "Ana left the game", "vergir: sample line for the HUD editor",
+        "Ana joined the game",
+        "Ana: anyone up for the crucible?",
+        "vergir: sure, give me a minute, I still have to repair my gear and sell everything I picked up in the sewers",
+        "Bram joined the game",
+        "Bram: count me in, but I am still level 18, so somebody else has to take the hits from the big ones",
+        "vergir died",
+        "Ana: that boss hits hard",
+        "Bram: did anyone else notice that the bounty board in Sacrament refreshed while we were down there?",
+        "Bram died",
+        "Ana left the game",
+        "vergir: sample lines for the HUD editor: drag the chat's corner bracket to make the window wider or taller",
     };
 
     /// <summary>Note the original state of everything ForceVisible touches, then place the samples.</summary>
@@ -122,41 +133,97 @@ internal static class HudSamples
         _texts.Clear();
     }
 
-    /// <summary>Sample chat lines inside a chat viewport, styled like the game's rows, stacked from the bottom.
-    /// Also used for the main-menu copy of the HUD.</summary>
+    /// <summary>A column of sample chat lines in a chat viewport (oldest first).</summary>
+    private sealed class ChatColumn
+    {
+        public RectTransform Viewport = null!;
+        public RectTransform Holder = null!;
+        public float Spacing;
+        public readonly List<TextMeshProUGUI> Lines = new();
+        public Vector2 FittedTo = new(-1f, -1f);
+    }
+
+    private static readonly List<ChatColumn> _columns = new();
+
+    /// <summary>
+    /// Every frame while samples show: the chat viewport's mask does not clip our lines, so each column shows only the
+    /// newest lines that fit its viewport (recomputed when the viewport's size changes: resizing the chat, HUD size,
+    /// UI Area).
+    /// </summary>
+    public static void FitChatColumns()
+    {
+        _columns.RemoveAll(c => c.Holder == null || c.Viewport == null);
+        foreach (var c in _columns)
+        {
+            var size = c.Viewport.rect.size;
+            if ((size - c.FittedTo).sqrMagnitude < 0.25f) continue;
+            c.FittedTo = size;
+            float used = 4f; // the column sits 4 units above the viewport's bottom
+            bool full = false;
+            for (int i = c.Lines.Count - 1; i >= 0; i--)
+            {
+                var line = c.Lines[i];
+                if (line == null) continue;
+                if (!full)
+                {
+                    float h = line.GetPreferredValues(line.text, size.x, 0f).y;
+                    full = used + h > size.y;
+                    if (!full) used += h + c.Spacing;
+                }
+                line.gameObject.SetActive(!full);
+            }
+            LayoutRebuilder.ForceRebuildLayoutImmediate(c.Holder);
+        }
+    }
+
+    /// <summary>Sample chat lines inside a chat viewport, styled like the game's rows: a column anchored to the bottom,
+    /// laid out by a VerticalLayoutGroup, the lines wrapping at the window's width; only the newest lines that fit are
+    /// shown (FitChatColumns). Also used for the main-menu copy of the HUD.</summary>
     public static GameObject? ChatLinesInto(Transform viewport, TMP_Text style)
     {
-        float line = style.fontSize * 1.35f;
         var holder = new GameObject("DUT_ChatSamples");
         var hrt = holder.AddComponent<RectTransform>();
         hrt.parent = viewport;
         holder.layer = viewport.gameObject.layer;
         hrt.localScale = Vector3.one;
         hrt.localRotation = Quaternion.identity;
-        hrt.anchorMin = Vector2.zero; hrt.anchorMax = Vector2.one; hrt.sizeDelta = Vector2.zero; hrt.anchoredPosition3D = Vector3.zero;
-        for (int i = 0; i < ChatLines.Length; i++)
-        {
-            string text = ChatLines[ChatLines.Length - 1 - i]; // bottom up
-            int colon = text.IndexOf(": ");
-            var go = new GameObject("line");
-            var rt = go.AddComponent<RectTransform>();
-            rt.parent = hrt;
-            go.layer = holder.layer;
-            rt.localScale = Vector3.one;
-            rt.localRotation = Quaternion.identity;
-            rt.anchorMin = new Vector2(0f, 0f); rt.anchorMax = new Vector2(1f, 0f); rt.pivot = new Vector2(0f, 0f);
-            rt.sizeDelta = new Vector2(0f, line);
-            rt.anchoredPosition3D = new Vector3(0f, 4f + i * line, 0f);
-            var t = go.AddComponent<TextMeshProUGUI>();
-            t.font = style.font;
-            t.fontSharedMaterial = style.fontSharedMaterial;
-            t.fontSize = style.fontSize;
-            t.color = style.color;
-            t.enableWordWrapping = false;
-            t.overflowMode = TextOverflowModes.Ellipsis;
-            t.raycastTarget = false;
-            t.text = colon > 0 ? $"<color=#9DC3E6>{text[..colon]}</color>: {text[(colon + 2)..]}" : text;
-        }
+        hrt.anchorMin = Vector2.zero; hrt.anchorMax = new Vector2(1f, 0f); hrt.pivot = Vector2.zero;
+        hrt.sizeDelta = Vector2.zero; hrt.anchoredPosition3D = new Vector3(0f, 4f, 0f);
+        var column = holder.AddComponent<VerticalLayoutGroup>();
+        column.childAlignment = TextAnchor.LowerLeft;
+        column.childControlWidth = true; column.childControlHeight = true;
+        column.childForceExpandWidth = true; column.childForceExpandHeight = false;
+        column.spacing = style.fontSize * 0.2f;
+        var fitter = holder.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        var col = new ChatColumn { Viewport = viewport.TryCast<RectTransform>()!, Holder = hrt, Spacing = column.spacing };
+        for (int round = 0; round < 3; round++) // enough for a tall window
+            foreach (var text in ChatLines)
+            {
+                int colon = text.IndexOf(": ");
+                // A copy of the game's own text object: a TextMeshProUGUI made from scratch with the same font, material
+                // and size rendered larger than its layout once the HUD size changed.
+                var go = Object.Instantiate(style.gameObject, hrt);
+                go.name = "line";
+                for (int k = go.transform.childCount - 1; k >= 0; k--) Object.DestroyImmediate(go.transform.GetChild(k).gameObject);
+                foreach (var comp in go.GetComponents<Component>())
+                {
+                    string type = comp.GetIl2CppType().Name;
+                    if (type is not ("RectTransform" or "CanvasRenderer" or "TextMeshProUGUI")) Object.DestroyImmediate(comp);
+                }
+                go.SetActive(true);
+                var t = go.GetComponent<TextMeshProUGUI>();
+                if (t == null) { Object.Destroy(go); continue; }
+                var color = style.color;
+                color.a = 1f;
+                t.color = color;
+                t.enableWordWrapping = true;
+                t.raycastTarget = false;
+                t.text = colon > 0 ? $"<color=#9DC3E6>{text[..colon]}</color>: {text[(colon + 2)..]}" : text;
+                col.Lines.Add(t);
+            }
+        if (col.Viewport != null) _columns.Add(col);
+        FitChatColumns();
         return holder;
     }
 
@@ -164,7 +231,9 @@ internal static class HudSamples
     {
         var c = hud.ChatWindow;
         var rows = c != null ? c.m_messageQueue : null;
-        var viewport = c != null && c.m_messageParent != null ? c.m_messageParent.parent : null;
+        // The column goes into "history" (the scroll view's parent), not into the scroll view's viewport: drawn inside the
+        // viewport, our lines came out at the wrong size and place once the HUD size changed.
+        var viewport = c != null && c.m_messageParent != null ? c.m_messageParent.parent?.parent?.parent : null;
         if (rows == null || rows.Count == 0 || viewport == null || rows[0].m_text == null) return;
         // The game's rows (real lines) step aside while ours show.
         var parent = c!.m_messageParent.GetComponent<CanvasGroup>() ?? c.m_messageParent.gameObject.AddComponent<CanvasGroup>();

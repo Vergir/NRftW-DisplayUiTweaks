@@ -22,6 +22,8 @@ types without a namespace live in `Il2Cpp`).
 | `Hud/HudSamples.cs` | Sample content while editing the live HUD. |
 | `Hud/MenuHud.cs` | The HUD copy the editor uses in the main menu. |
 | `Hud/HideOutsideCombat.cs` | Hide HUD Outside Combat. |
+| `Hud/ChatRows.cs` | Extra chat message rows for a taller chat window. |
+| `Hud/SettingsPreview.cs` | Previews over the settings menu: UI area outline, half-transparent HUD. |
 | `DevCommands.cs` | Development commands (only with `UserData/DisplayUiTweaks/.dev`). |
 | `Patches/*.cs` | Harmony patches. |
 
@@ -117,6 +119,12 @@ Unity's source), then:
 When the result equals the game's, the original runs untouched. Otherwise the prefix does what the original does with
 our value (`SetScaleFactor`, `SetReferencePixelsPerUnit`) and skips it.
 
+Nested canvases (a `Canvas` below the root canvas: the chat window, the item pickups list) keep drawing with the root's
+previous scale when the root's scale factor changes at run time: after a HUD size change the chat drew bigger and lower
+than its own rect (its RectTransform, and so the editor's resize bracket, were right). A postfix on the same method
+remembers each scaler's last scale factor and, when it changes, switches every enabled nested canvas off and on, which
+makes it pick up the new scale.
+
 ## UI Toolkit screens
 
 Four screens use UI Toolkit (`UIDocument`): `ActivityScreenPanel.Document` and `ActivityVendorScreenPanel.Document`
@@ -177,6 +185,11 @@ pairs move together. `HudWidgets` lists the 16 elements by path.
   "Show Controller HUD" is off), and `PlayerHUD.UpdateRealmDifficultyLayoutBasedOnTimeOfDay` moves the realm difficulty
   icon. The mod remembers what it wrote last; a different value is a move by the game and becomes the new game value,
   with the user's offset on top. The same goes for scale (`PlayerHUD.UpdateScale` applies the game's `UI_Scale*` fields).
+* **Chat size.** The chat window (`playerChat/apectRatio/chatWindow`) is the one element whose size changes, not only
+  its scale: per-axis factors on its `sizeDelta`, saved as `Chat=x,y,scale,w,h`. Its virtual list only has the rows the
+  pool spawned at start (`ChatWindow.m_maxDisplayedMessages`, 10), so a taller window would show 10 lines and empty
+  space. `ChatRows` clones rows into `ChatWindow.m_messageQueue` (the list `RefreshData` maps history entries onto)
+  until they fill the viewport and raises `m_maxDisplayedMessages`; rows are only added.
 * **Layout-driven elements.** The boss bar and plague meter (`bossStatsView/canvas/statsGroup`,
   `plagueMeter/canvas/statsGroup`) are placed by a `VerticalLayoutGroup` on their canvas; they move through its padding.
 * **Boxing.** Some canvases have no UI box, so their elements sit at the screen edges outside the box:
@@ -194,6 +207,8 @@ pairs move together. `HudWidgets` lists the 16 elements by path.
   ≥ 0.05, not larger than 40% of the screen) is a hit area; the smallest one under the cursor wins, elements that draw
   nothing get a faint placeholder at their rect, and placeholders lose to visible art. Tab cycles through the elements
   under the cursor. The picked element's root canvas sorts 100 higher while picked.
+* **Resizing.** The chat gets an L-shaped bracket on the corner opposite its pivot (top-left: it is anchored
+  bottom-right); dragging it changes the size factors, with the opposite corner staying put.
 * **Moving.** A screen-pixel delta is converted into the first part's parent space
   (`RectTransformUtility.ScreenPointToLocalPointInRectangle` with the canvas camera). The element's centre stays on
   screen, so it can always be grabbed again.
@@ -227,6 +242,26 @@ pairs move together. `HudWidgets` lists the 16 elements by path.
   canvas in the copy draws nothing), everything that is not an element is switched off, and the prefab's placeholder
   texts ("9999 / 9999", "300/900", "Heal hn") get sensible values. All other root canvases (the main menu) are
   switched off while editing.
+
+## Settings preview
+
+While one of two rows is highlighted, and while a slider drag that changed it is still held (the cursor may slip off
+the row), a preview is drawn over the settings screen:
+
+* **UI Area**: an overlay outline of the UI area for the slider's current value (the UI box itself follows once the
+  value is committed, mouse released, see Timing).
+* **HUD & Dialogue UI Size**: the main-menu HUD copy (`MenuHud`, no scripts, no raycasters) with the saved layout
+  (`HudLayout.DiscoverWithLayout`, not bound: the live HUD stays bound), its root canvases as overlays above the menu
+  with their CanvasGroups at 40% and `blocksRaycasts` off. HUD size applies to it every frame.
+
+"Highlighted" is the game's own row highlight: `SettingsItemGUIBase.HandleSelection` activates the row's
+`m_selectedImage` for the row under the mouse and the row selected with keys / gamepad (the EventSystem selection does
+not follow the mouse in this menu). Building the copy (instantiating the prefab, destroying its ~360 scripts) is the
+expensive part, so it is built once and then only shown / hidden; it is freed 5 seconds after no row of ours is
+visible (settings closed), when the editor opens, and on Reset HUD Layout.
+
+A first version showed the live HUD behind the menu instead: its raycasters (the chat window has one) took the pointer
+from the row, the row lost its highlight, and the preview blinked on and off; gamepad navigation broke too.
 
 ## Hide HUD Outside Combat
 
@@ -277,4 +312,7 @@ With a file `UserData/DisplayUiTweaks/.dev`, commands in `UserData/DisplayUiTwea
 after reading): `edit` / `done` (HUD editor), `shot NAME` (screenshot), `layout` (bound elements and saved layout),
 `vis [Id]` (an element's graphics), `pos` (money / durability / equipment positions), `pad on|off` (flip Show Controller
 HUD in memory and re-evaluate the equipment layout), `menutest` / `menuoff` (show the main-menu HUD copy on top of the
-game).
+game), `chatsize W H` (chat size factors), `options` / `options close` (open / close the player menu's settings),
+`select ROW` (select one of our rows by name, e.g. `DUT_UiArea`), `hud N` (HUD size %), `chatinfo` / `chatcanvas
+[toggle]` / `chattest` (chat window scale, its nested canvas, a red rectangle over it), `find PREFIX` /
+`findtext TEXT` (scene objects / texts).

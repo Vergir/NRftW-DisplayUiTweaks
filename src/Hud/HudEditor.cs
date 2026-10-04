@@ -38,13 +38,23 @@ internal static class HudEditor
     private static readonly List<(Canvas c, Camera? cam, float distance)> _overlays = new();
     private static int _enteredFrame, _exitFrame = -10;
 
+    // Resize handle (chat window): an L-shaped bracket on the corner opposite the element's pivot.
+    private static RectTransform? _handle;
+    private static RectTransform? _handleBarX, _handleBarY;
+    private static Widget? _resizing, _handleHover;
+    private static Vector2 _resizeStartLocal, _resizeStartSize;
+
     /// <summary>Esc while editing (and in the frames right after) belongs to the editor, not to the settings screen.</summary>
     public static bool SuppressBack => On || Time.frameCount <= _exitFrame + 2;
+
+    /// <summary>The live HUD is kept shown and fully visible while editing it.</summary>
+    public static bool KeepLiveHudShown => On && !OnMenuCopy;
     private static bool _hudWasHidden, _exiting;
 
     public static void Enter()
     {
         if (On) return;
+        SettingsPreview.StopNow();
         try
         {
             var live = PlayerUIService.Instance?.PlayerHud;
@@ -88,6 +98,7 @@ internal static class HudEditor
         On = false;
         if (was) _exitFrame = Time.frameCount;
         _drag = null;
+        _resizing = null;
         RestoreOrder();
         if (was) HudLayout.Save();
         var live = HudLayout.LiveHud;
@@ -215,7 +226,7 @@ internal static class HudEditor
             var prt = panel.rectTransform;
             prt.anchorMin = prt.anchorMax = prt.pivot = new Vector2(0.5f, 0.5f);
             prt.anchoredPosition = new Vector2(0f, Screen.height * 0.17f);
-            prt.sizeDelta = new Vector2(440f, 250f) * px;
+            prt.sizeDelta = new Vector2(470f, 275f) * px;
             _panelGroup = panel.gameObject.AddComponent<CanvasGroup>();
             _panelGroup.blocksRaycasts = false;
             var frameColor = new Color(0.85f, 0.7f, 0.4f, 0.9f);
@@ -236,6 +247,7 @@ internal static class HudEditor
             text.text = "<size=125%><color=#E8C878>Edit HUD Layout</color></size>\n" +
                         "Drag an element to move it\n" +
                         "Mouse wheel: resize\n" +
+                        "Chat: drag its corner bracket to change its size\n" +
                         "Right click: reset the element\n" +
                         "Tab: next element under the cursor\n" +
                         "R: reset everything      Esc: done";
@@ -245,8 +257,72 @@ internal static class HudEditor
             crt.pivot = new Vector2(0f, 1f);
             crt.sizeDelta = new Vector2(900f, 40f) * px;
         }
+        var handleGo = new GameObject("resizeHandle");
+        Attach(handleGo, _root.transform);
+        _handle = handleGo.AddComponent<RectTransform>();
+        _handle.anchorMin = _handle.anchorMax = Vector2.zero;
+        _handle.sizeDelta = Vector2.zero;
+        _handleBarX = Box(_handle, "barX", Color.clear).rectTransform;
+        _handleBarY = Box(_handle, "barY", Color.clear).rectTransform;
+        handleGo.SetActive(false);
         _graphics.Clear();
         _nextGraphicsScan = 0f;
+    }
+
+    /// <summary>Places the resize bracket on the chat's free corner; returns the widget when the cursor is on it.</summary>
+    private static Widget? UpdateHandle(Vector2 mouse, float px)
+    {
+        if (_handle == null || _handleBarX == null || _handleBarY == null) return null;
+        Widget? chat = null;
+        foreach (var w in HudLayout.Widgets) if (w.Resizable && w.Alive && w.Parts[0].gameObject.activeInHierarchy) { chat = w; break; }
+        _handle.gameObject.SetActive(chat != null);
+        if (chat == null) return null;
+        var part = chat.Parts[0];
+        var r = HudWidgets.ScreenRect(part, HudWidgets.Cam(chat));
+        // The corner opposite the pivot (the chat is anchored bottom-right: its top-left corner).
+        bool left = part.pivot.x > 0.5f, top = part.pivot.y < 0.5f;
+        var corner = new Vector2(left ? r.xMin : r.xMax, top ? r.yMax : r.yMin);
+        float len = 34f * px, thick = 5f * px;
+        _handle.anchoredPosition = corner;
+        // Bars run from the corner along the two edges, into the element.
+        _handleBarX.anchorMin = _handleBarX.anchorMax = Vector2.zero;
+        _handleBarX.pivot = new Vector2(left ? 0f : 1f, top ? 1f : 0f);
+        _handleBarX.sizeDelta = new Vector2(len, thick);
+        _handleBarX.anchoredPosition = Vector2.zero;
+        _handleBarY.anchorMin = _handleBarY.anchorMax = Vector2.zero;
+        _handleBarY.pivot = _handleBarX.pivot;
+        _handleBarY.sizeDelta = new Vector2(thick, len);
+        _handleBarY.anchoredPosition = Vector2.zero;
+        var hit = Rect.MinMaxRect(corner.x - (left ? 12f * px : len), corner.y - (top ? len : 12f * px),
+                                  corner.x + (left ? len : 12f * px), corner.y + (top ? 12f * px : len));
+        bool on = _resizing == chat || (_drag == null && _resizing == null && hit.Contains(mouse));
+        var color = on ? new Color(1f, 0.85f, 0.35f, 1f) : new Color(0.9f, 0.75f, 0.4f, 0.85f);
+        _handleBarX.GetComponent<Image>().color = color;
+        _handleBarY.GetComponent<Image>().color = color;
+        return hit.Contains(mouse) ? chat : null;
+    }
+
+    private static void StartResize(Widget w, Vector2 mouse)
+    {
+        var part = w.Parts[0];
+        var parent = part.parent != null ? part.parent.TryCast<RectTransform>() : null;
+        if (parent == null) return;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, mouse, HudWidgets.Cam(w), out _resizeStartLocal);
+        _resizeStartSize = part.sizeDelta;
+        _resizing = w;
+    }
+
+    private static void DoResize(Widget w, Vector2 mouse)
+    {
+        var part = w.Parts[0];
+        var parent = part.parent != null ? part.parent.TryCast<RectTransform>() : null;
+        if (parent == null || w.OrigSize[0].x <= 0f || w.OrigSize[0].y <= 0f) return;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, mouse, HudWidgets.Cam(w), out var local);
+        var d = local - _resizeStartLocal;
+        float sx = part.pivot.x > 0.5f ? -1f : 1f, sy = part.pivot.y > 0.5f ? -1f : 1f;
+        float scale = Mathf.Max(0.01f, part.localScale.x);
+        var size = _resizeStartSize + new Vector2(sx * d.x, sy * d.y) / scale;
+        HudLayout.ResizeTo(w, new Vector2(size.x / w.OrigSize[0].x, size.y / w.OrigSize[0].y));
     }
 
     private static void ScanGraphics()
@@ -270,6 +346,7 @@ internal static class HudEditor
     {
         if (!On || _root == null) return;
         if (!OnMenuCopy && HudLayout.LiveHud != null) HudSamples.ForceVisible(HudLayout.LiveHud);
+        HudSamples.FitChatColumns();
         BlockGameInput();
         if (Time.frameCount > _enteredFrame && Input.GetKeyDown(KeyCode.Escape)) { Exit(); return; }
         if (Input.GetKeyDown(KeyCode.R)) HudLayout.ResetAll();
@@ -323,22 +400,26 @@ internal static class HudEditor
         if (Input.GetKeyDown(KeyCode.Tab) && _under.Count > 1) _cycle = (_cycle + 1) % _under.Count;
         _hover = _under.Count > 0 ? _under[Mathf.Min(_cycle, _under.Count - 1)] : null;
 
-        var target = _drag ?? _hover;
+        float px = Screen.height / 1080f;
+        _handleHover = UpdateHandle(mouse, px);
+        var target = _resizing ?? _drag ?? _handleHover ?? _hover;
         BringToFront(target);
         foreach (var (w, box, fill) in _placeholders)
             fill.color = w == target ? new Color(1f, 0.8f, 0.2f, 0.25f) : new Color(1f, 1f, 1f, 0.08f);
-        if (_panelGroup != null) _panelGroup.alpha = _drag != null ? 0.15f : 1f;
+        if (_panelGroup != null) _panelGroup.alpha = _drag != null || _resizing != null ? 0.15f : 1f;
         if (_cursorLabel != null)
         {
             _cursorLabel.gameObject.SetActive(target != null);
             if (target != null)
             {
-                _cursorLabel.text = _drag == null && _under.Count > 1 ? $"{target.Name}   <alpha=#99>({_cycle + 1}/{_under.Count}, Tab for next)" : target.Name;
+                _cursorLabel.text = (_resizing != null || (_drag == null && _handleHover != null)) ? $"{target.Name}: drag to resize"
+                                  : _drag == null && _under.Count > 1 ? $"{target.Name}   <alpha=#99>({_cycle + 1}/{_under.Count}, Tab for next)" : target.Name;
                 _cursorLabel.rectTransform.anchoredPosition = mouse + new Vector2(24f, -8f) * (Screen.height / 1080f);
             }
         }
 
-        if (Input.GetMouseButtonDown(0) && _hover != null && _rects.TryGetValue(_hover, out var start))
+        if (Input.GetMouseButtonDown(0) && _handleHover != null) StartResize(_handleHover, mouse);
+        else if (Input.GetMouseButtonDown(0) && _hover != null && _rects.TryGetValue(_hover, out var start))
         {
             _drag = _hover;
             _grabMouse = mouse;
@@ -354,7 +435,8 @@ internal static class HudEditor
             var delta = want - cur.position;
             if (delta.sqrMagnitude > 0.01f) HudLayout.MoveScreen(_drag, mouse, mouse + delta);
         }
-        if (Input.GetMouseButtonUp(0)) _drag = null;
+        if (_resizing != null && Input.GetMouseButton(0)) DoResize(_resizing, mouse);
+        if (Input.GetMouseButtonUp(0)) { _drag = null; _resizing = null; }
         float wheel = Input.mouseScrollDelta.y;
         if (_hover != null && Mathf.Abs(wheel) > 0.01f) HudLayout.ScaleBy(_hover, Mathf.Pow(1.05f, wheel));
         if (_hover != null && Input.GetMouseButtonDown(1)) HudLayout.Reset(_hover);
@@ -416,7 +498,7 @@ internal static class HudEditor
     [HarmonyPatch(typeof(PlayerHUD), nameof(PlayerHUD.Hide))]
     private static class NoHidePatch
     {
-        private static bool Prefix() => !On || OnMenuCopy || _exiting;
+        private static bool Prefix() => !KeepLiveHudShown || _exiting;
     }
 
     /// <summary>The boss bar fades itself in its own update (after ours): keep it up while editing the live HUD.</summary>
@@ -425,7 +507,7 @@ internal static class HudEditor
     {
         private static void Postfix(BossStatsView __instance)
         {
-            if (On && !OnMenuCopy && __instance.CanvasGroup != null) __instance.CanvasGroup.alpha = 1f;
+            if (KeepLiveHudShown && __instance.CanvasGroup != null) __instance.CanvasGroup.alpha = 1f;
         }
     }
 
@@ -434,7 +516,7 @@ internal static class HudEditor
     {
         private static void Postfix(PlagueMeterHUD __instance)
         {
-            if (On && !OnMenuCopy && __instance.CanvasGroup != null) __instance.CanvasGroup.alpha = 1f;
+            if (KeepLiveHudShown && __instance.CanvasGroup != null) __instance.CanvasGroup.alpha = 1f;
         }
     }
 
@@ -444,7 +526,7 @@ internal static class HudEditor
     {
         private static void Postfix()
         {
-            if (!On || OnMenuCopy) return;
+            if (!KeepLiveHudShown) return;
             var settings = PlayerUIService.PlayerHudSettings;
             if (settings != null)
                 foreach (var s in settings)

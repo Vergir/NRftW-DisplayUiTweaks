@@ -9,9 +9,14 @@
 * **Edit HUD Layout**: drag, resize and reset HUD elements on top of the game, with sample content in empty elements;
   also from the main menu. **Reset HUD Layout** puts everything back.
 * **Hide HUD Outside Combat**: Off / On / On, but show health while hurt.
+* Chat window size: drag the corner bracket in the editor; a taller chat shows more lines.
+* Live previews: an outline of the UI area while the UI Area row is highlighted, a half-transparent HUD preview over
+  the settings menu while the HUD size row is highlighted.
 * HUD elements the game pins to the screen edges (bounties, item pickups, hint bar, boss bar, plague meter, area banner)
   are kept inside the UI area.
 * The Bounty Board & Map Fix row is gone: the fix is always on (config switch `BoxUiToolkitScreens`).
+* Fix: after changing HUD & Dialogue UI Size the chat window (and the item pickups) drew bigger and in the wrong place
+  until the next load; nested canvases now follow a scale change at once.
 * The rows show the current values whenever a settings screen opens (the main menu and the game have separate screens).
 
 ## 1.0.0

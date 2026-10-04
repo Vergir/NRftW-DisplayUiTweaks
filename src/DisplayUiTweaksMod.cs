@@ -55,7 +55,7 @@ public class DisplayUiTweaksMod : MelonMod
     /// <summary>Unload / hot reload: undo what is not a Harmony patch.</summary>
     public override void OnDeinitializeMelon()
     {
-        try { Hud.HudEditor.Exit(); Hud.HudLayout.RestoreAll(); Hud.MenuHud.Destroy(); }
+        try { Hud.SettingsPreview.StopNow(); Hud.HudEditor.Exit(); Hud.HudLayout.RestoreAll(); Hud.MenuHud.Destroy(); }
         catch (System.Exception e) { LoggerInstance.Warning("HUD layout restore: " + e.Message); }
         try { UiScaling.RestorePanels(); }
         catch (System.Exception e) { LoggerInstance.Warning("RestorePanels: " + e.Message); }
@@ -116,6 +116,7 @@ public class DisplayUiTweaksMod : MelonMod
         {
             Hud.HudLayout.Tick();
             Hud.HudEditor.Tick();
+            Hud.SettingsPreview.Tick();
             DevCommands.Tick();
         }
         catch (System.Exception e)

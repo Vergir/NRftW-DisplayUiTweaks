@@ -36,6 +36,10 @@ New rows in Options (at the bottom of **Options > Display**; with the Mod Settin
 With the defaults on a 16:9 monitor the game looks exactly as before. On wider monitors the UI area starts at 16:9:
 raise UI Area to use more of the screen width.
 
+Live previews: while the UI Area row is highlighted, an outline marks the UI area; while the HUD & Dialogue UI Size row
+is highlighted, a half-transparent preview of the HUD (with your layout and sample content) is drawn over the settings
+menu. The menu stays usable with mouse and gamepad.
+
 ### HUD layout editor
 
 **Edit HUD Layout** shows the HUD on top of the game (or, from the main menu, a copy of it), with sample content in
@@ -43,6 +47,8 @@ elements that are empty right now: chat lines, item pickups, a bounty and a chal
 worn-out durability figure.
 
 * Drag an element to move it, use the mouse wheel to resize it, right click to put it back.
+* The chat window has a corner bracket: drag it to change the window's width and height. A taller chat shows more
+  lines.
 * Tab picks the next element under the cursor where elements overlap; the picked one draws on top.
 * R resets everything, Esc closes the editor.
 

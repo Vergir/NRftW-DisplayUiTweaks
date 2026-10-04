@@ -9,14 +9,16 @@ namespace DisplayUiTweaks.Hud;
 
 /// <summary>
 /// The user's HUD layout: per element an offset in parts of its parent's size (the UI box) and a scale factor, saved in
-/// Prefs.HudLayout as "Id=x,y,scale;...". Applied to the live HUD every frame (cheap: a compare per part), so it follows
-/// UI box, HUD size and resolution changes, and wins over the few places the game moves elements itself.
+/// Prefs.HudLayout as "Id=x,y,scale;..." (the chat adds its size factors: "Chat=x,y,scale,w,h"). Applied to the live HUD
+/// every frame (cheap: a compare per part), so it follows UI box, HUD size and resolution changes, and wins over the few
+/// places the game moves elements itself.
 /// </summary>
 internal static class HudLayout
 {
     public const float MinScale = 0.3f, MaxScale = 3f;
+    public const float MinSize = 0.5f, MaxSize = 4f;
 
-    private static readonly Dictionary<string, (Vector2 offset, float scale)> _saved = new();
+    private static readonly Dictionary<string, (Vector2 offset, float scale, Vector2 size)> _saved = new();
     private static string _loadedFrom = "\0";
 
     /// <summary>The HUD the widgets belong to: PlayerHUD's transform, or the main-menu copy while editing there.</summary>
@@ -52,8 +54,30 @@ internal static class HudLayout
         Widgets.Clear();
         Widgets.AddRange(HudWidgets.Discover(root));
         foreach (var w in Widgets)
-            if (_saved.TryGetValue(w.Id, out var s)) { w.Offset = s.offset; w.Scale = Mathf.Clamp(s.scale, MinScale, MaxScale); }
+            if (_saved.TryGetValue(w.Id, out var s))
+            {
+                w.Offset = s.offset;
+                w.Scale = Mathf.Clamp(s.scale, MinScale, MaxScale);
+                if (w.Resizable) w.Size = ClampSize(s.size);
+            }
         DisplayUiTweaksMod.Log.Msg($"HUD layout: {Widgets.Count} elements on '{root.name}', {Widgets.FindAll(w => !w.IsDefault).Count} moved");
+    }
+
+    /// <summary>Widgets of another HUD root (the settings preview's copy) with the saved layout, without binding them:
+    /// the live HUD stays bound.</summary>
+    public static List<Widget> DiscoverWithLayout(Transform root)
+    {
+        Load();
+        HudBoxing.Apply(root);
+        var list = HudWidgets.Discover(root);
+        foreach (var w in list)
+            if (_saved.TryGetValue(w.Id, out var s))
+            {
+                w.Offset = s.offset;
+                w.Scale = Mathf.Clamp(s.scale, MinScale, MaxScale);
+                if (w.Resizable) w.Size = ClampSize(s.size);
+            }
+        return list;
     }
 
     public static void Unbind()
@@ -83,12 +107,18 @@ internal static class HudLayout
             if (eq <= 0) continue;
             var v = entry[(eq + 1)..].Split(',');
             if (v.Length < 3) continue;
-            if (float.TryParse(v[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
-                && float.TryParse(v[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y)
-                && float.TryParse(v[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float s))
-                _saved[entry[..eq].Trim()] = (new Vector2(x, y), s);
+            if (!F(v[0], out float x) || !F(v[1], out float y) || !F(v[2], out float s)) continue;
+            var size = Vector2.one;
+            if (v.Length >= 5 && F(v[3], out float w) && F(v[4], out float h)) size = new Vector2(w, h);
+            _saved[entry[..eq].Trim()] = (new Vector2(x, y), s, size);
         }
     }
+
+    private static bool F(string s, out float v) => float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out v);
+
+    private static string F(float v, string format) => v.ToString(format, CultureInfo.InvariantCulture);
+
+    public static Vector2 ClampSize(Vector2 s) => new(Mathf.Clamp(s.x, MinSize, MaxSize), Mathf.Clamp(s.y, MinSize, MaxSize));
 
     /// <summary>Store the bound widgets' layout (entries of elements not bound right now are kept).</summary>
     public static void Save()
@@ -97,16 +127,18 @@ internal static class HudLayout
         foreach (var w in Widgets)
         {
             if (w.IsDefault) _saved.Remove(w.Id);
-            else _saved[w.Id] = (w.Offset, w.Scale);
+            else _saved[w.Id] = (w.Offset, w.Scale, w.Size);
         }
         var sb = new StringBuilder();
         foreach (var kv in _saved)
         {
             if (sb.Length > 0) sb.Append(';');
             sb.Append(kv.Key).Append('=')
-              .Append(kv.Value.offset.x.ToString("0.#####", CultureInfo.InvariantCulture)).Append(',')
-              .Append(kv.Value.offset.y.ToString("0.#####", CultureInfo.InvariantCulture)).Append(',')
-              .Append(kv.Value.scale.ToString("0.###", CultureInfo.InvariantCulture));
+              .Append(F(kv.Value.offset.x, "0.#####")).Append(',')
+              .Append(F(kv.Value.offset.y, "0.#####")).Append(',')
+              .Append(F(kv.Value.scale, "0.###"));
+            if ((kv.Value.size - Vector2.one).sqrMagnitude > 1e-8f)
+                sb.Append(',').Append(F(kv.Value.size.x, "0.###")).Append(',').Append(F(kv.Value.size.y, "0.###"));
         }
         Prefs.HudLayout.Value = sb.ToString();
         _loadedFrom = Prefs.HudLayout.Value;
@@ -176,7 +208,13 @@ internal static class HudLayout
             var ws = w.OrigScale[i] * w.Scale;
             if ((curScale - ws).sqrMagnitude > 1e-8f) part.localScale = ws;
             w.LastScale[i] = ws;
+            if (w.Resizable)
+            {
+                var wantSize = Vector2.Scale(w.OrigSize[i], w.Size);
+                if ((part.sizeDelta - wantSize).sqrMagnitude > 0.0001f) part.sizeDelta = wantSize;
+            }
         }
+        if (w.Resizable && LiveHud != null && !HudEditor.OnMenuCopy && w.Parts[0] != null && w.Parts[0].IsChildOf(LiveHud.transform)) ChatRows.Ensure(LiveHud);
     }
 
     /// <summary>The game's values back (unbind / unload).</summary>
@@ -195,6 +233,7 @@ internal static class HudLayout
             if (part == null) continue;
             if (w.Group == null) part.anchoredPosition = w.OrigPos[i];
             part.localScale = w.OrigScale[i];
+            if (w.Resizable) part.sizeDelta = w.OrigSize[i];
         }
     }
 
@@ -220,16 +259,25 @@ internal static class HudLayout
         Apply(w);
     }
 
+    /// <summary>Resize by a local delta (parent units) at the corner opposite the pivot.</summary>
+    public static void ResizeTo(Widget w, Vector2 sizeFactor)
+    {
+        w.Size = ClampSize(sizeFactor);
+        Apply(w);
+    }
+
     public static void Reset(Widget w)
     {
         w.Offset = Vector2.zero;
         w.Scale = 1f;
+        w.Size = Vector2.one;
         Apply(w);
     }
 
     /// <summary>Settings row / R in the editor: everything back to the game's layout, saved.</summary>
     public static void ResetAll()
     {
+        SettingsPreview.StopNow(); // its HUD copy carries the old layout
         foreach (var w in Widgets) Reset(w);
         _saved.Clear();
         Prefs.HudLayout.Value = "";
