@@ -103,17 +103,18 @@ internal static class SetResolutionFromCurrentSettingsPatch
     }
 }
 
-/// <summary>Adds the Custom UI aspect mode to the dropdown and keeps a saved Custom mode (see docs/internal.md).</summary>
+/// <summary>
+/// The game's UI Aspect Mode row: carries a 1.0.0 "Custom (Display &amp; UI Tweaks)" setup over to UI Area once, and notes
+/// in the row's description that UI Area overrides it (see docs/internal.md, "UI Area").
+/// </summary>
 [HarmonyPatch(typeof(DisplaySettingsTab), nameof(DisplaySettingsTab.InitializeUIAspectModes))]
 internal static class InitializeUIAspectModesPatch
 {
-    public const string CustomModeLabel = "Custom (Display & UI Tweaks)";
     private static UIAspectMode _savedMode = UIAspectMode.Native;
 
     static void Prefix()
     {
         _savedMode = UIAspectMode.Native;
-        if (!Prefs.Enabled.Value || !Prefs.UnlockUiAspectModes.Value) return;
         try
         {
             var device = Core.SettingsData?.Device;
@@ -122,47 +123,63 @@ internal static class InitializeUIAspectModesPatch
         catch (System.Exception e) { DisplayUiTweaksMod.Log.Warning("Could not read the saved UI aspect mode: " + e.Message); }
     }
 
-    static void Postfix(DisplaySettingsTab __instance)
+    static void Postfix()
     {
-        if (!Prefs.Enabled.Value || !Prefs.UnlockUiAspectModes.Value) return;
+        if (!Prefs.Enabled.Value) return;
         try
         {
-            var modes = __instance.m_allowedUIAspectModes;
-            var names = __instance.m_uiAspectModeNames;
-            if (modes == null || names == null) return;
-
-            if (!modes.Contains(UIAspectMode.Custom))
-            {
-                modes.Add(UIAspectMode.Custom);
-                var newNames = new Il2CppStringArray(names.Length + 1);
-                for (int i = 0; i < names.Length; i++) newNames[i] = names[i];
-                newNames[names.Length] = CustomModeLabel;
-                __instance.m_uiAspectModeNames = newNames;
-            }
-            else
-            {
-                int idx = modes.IndexOf(UIAspectMode.Custom);
-                if (idx >= 0 && idx < names.Length) names[idx] = CustomModeLabel;
-            }
-
-            if (_savedMode == UIAspectMode.Custom)
-            {
-                var device = Core.SettingsData?.Device;
-                if (device != null && device.UIAspectMode != UIAspectMode.Custom)
-                {
-                    device.UIAspectMode = UIAspectMode.Custom;
-                    DisplayUiTweaksMod.Log.Msg("Restored the saved UI aspect mode (Custom) that the game reset to Native");
-                }
-                __instance.m_currentUIAspectModeIndex = modes.IndexOf(UIAspectMode.Custom);
-                if (UIAspectConstraint.s_globalMode != UIAspectMode.Custom) UIAspectConstraint.SetGlobalMode(UIAspectMode.Custom);
-            }
-
-            DisplayUiTweaksMod.Log.Msg("UI aspect modes: " + modes.Count + " (current index " + __instance.m_currentUIAspectModeIndex + ")");
+            // The game resets a saved Custom mode to Native here (it never offers Custom): keep the user's box as UI Area.
+            Migrate(_savedMode);
+            UiAspectNote.Apply();
         }
-        catch (System.Exception e)
+        catch (System.Exception e) { DisplayUiTweaksMod.Log.Error("UI aspect mode setup failed: " + e); }
+    }
+
+    /// <summary>Once: a 1.0.0 "Custom (Display &amp; UI Tweaks)" UI aspect becomes the same UI Area. Also called at start-up
+    /// (hot reload / settings already loaded) with the live mode.</summary>
+    public static void Migrate(UIAspectMode mode)
+    {
+        if (Prefs.UiAreaMigrated.Value) return;
+        Prefs.UiAreaMigrated.Value = true;
+        if (mode == UIAspectMode.Custom)
         {
-            DisplayUiTweaksMod.Log.Error("UI aspect mode unlock failed: " + e);
+            Prefs.UiArea.Value = Mathf.Round(Mathf.Clamp(Prefs.UiBoxAspect.Value, Prefs.UiAreaMin, Prefs.UiAreaMax) * 100f) / 100f;
+            Prefs.CommitLayoutValues();
+            UiBox.ReapplyAllConstraints();
+            DisplayUiTweaksMod.Log.Msg("Carried the Custom UI aspect " + Prefs.UiArea.Value.ToString("0.00") + " over to UI Area");
         }
+        Prefs.Save();
+    }
+}
+
+/// <summary>Appends "overridden by UI Area" to the game's UI Aspect Mode description (one static LocalizedMessage).</summary>
+internal static class UiAspectNote
+{
+    public const string Note = "\n\nDisplay & UI Tweaks replaces this setting with its UI Area setting.";
+    private static LocalizedMessage? _message;
+    private static string?[]? _original;
+
+    public static void Apply()
+    {
+        var m = DisplaySettingsTab.s_uiAspectModeDescription;
+        if (m == null || (m.English != null && m.English.EndsWith(Note))) return;
+        _message = m;
+        _original = new string[] { m.English, m.French, m.Italian, m.German, m.Spanish, m.BrazilianPortuguese, m.TraditionalChinese,
+                            m.SimplifiedChinese, m.Korean, m.Russian, m.Japanese, m.Polish };
+        m.English += Note; m.French += Note; m.Italian += Note; m.German += Note; m.Spanish += Note; m.BrazilianPortuguese += Note;
+        m.TraditionalChinese += Note; m.SimplifiedChinese += Note; m.Korean += Note; m.Russian += Note; m.Japanese += Note; m.Polish += Note;
+    }
+
+    /// <summary>Unload / hot reload.</summary>
+    public static void Restore()
+    {
+        var m = _message;
+        var o = _original;
+        if (m == null || o == null) return;
+        m.English = o[0]; m.French = o[1]; m.Italian = o[2]; m.German = o[3]; m.Spanish = o[4]; m.BrazilianPortuguese = o[5];
+        m.TraditionalChinese = o[6]; m.SimplifiedChinese = o[7]; m.Korean = o[8]; m.Russian = o[9]; m.Japanese = o[10]; m.Polish = o[11];
+        _message = null;
+        _original = null;
     }
 }
 
@@ -173,8 +190,36 @@ internal static class DisplaySettingsTabInitializePatch
     static void Postfix(DisplaySettingsTab __instance)
     {
         DisplayUiTweaksMod.Log.Msg("Display settings tab initialized by the game");
-        if (!Prefs.Enabled.Value || !Prefs.AddSettingsRows.Value) return;
+        if (!Prefs.Enabled.Value) return;
+        try { UiAspectNote.Apply(); }
+        catch (System.Exception e) { DisplayUiTweaksMod.Log.Warning("UI aspect note: " + e.Message); }
+        if (!Prefs.AddSettingsRows.Value) return;
         try { SettingsRows.AddTo(__instance); }
         catch (System.Exception e) { DisplayUiTweaksMod.Log.Error("Adding settings rows failed: " + e); }
     }
+}
+
+/// <summary>Our rows show the current values whenever a settings screen opens (main menu and game have separate screens).</summary>
+[HarmonyPatch(typeof(SettingsScreen), nameof(SettingsScreen.Show))]
+internal static class SettingsScreenShowPatch
+{
+    static void Postfix(SettingsScreen __instance)
+    {
+        if (!Prefs.Enabled.Value) return;
+        try { SettingsRows.RefreshValues(__instance); }
+        catch (System.Exception e) { DisplayUiTweaksMod.Log.Warning("Refreshing settings rows: " + e.Message); }
+    }
+}
+
+/// <summary>Esc while editing the HUD layout belongs to the editor: the settings screen it was opened from stays open.</summary>
+[HarmonyPatch(typeof(MainMenuSettingsScreen), "get_IgnoreBack")]
+internal static class MainMenuSettingsIgnoreBackPatch
+{
+    static void Postfix(ref bool __result) { if (Hud.HudEditor.SuppressBack) __result = true; }
+}
+
+[HarmonyPatch(typeof(SettingsScreenPlayerMenu), "get_IgnoreBack")]
+internal static class PlayerMenuSettingsIgnoreBackPatch
+{
+    static void Postfix(ref bool __result) { if (Hud.HudEditor.SuppressBack) __result = true; }
 }

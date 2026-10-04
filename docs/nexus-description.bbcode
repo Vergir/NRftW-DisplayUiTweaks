@@ -1,29 +1,31 @@
 [size=5][b]Display & UI Tweaks[/b][/size]
 
-Play No Rest for the Wicked on any screen shape: ultrawide, 16:10, square, tall, and the Steam Deck. The mod unlocks the game's hidden display options and adds UI size and UI aspect settings to the game's own Options menu.
+Play No Rest for the Wicked on any screen shape: ultrawide, 16:10, square, tall, and the Steam Deck. The mod unlocks every resolution, adds UI area and UI size settings to the game's own Options menu, a drag-and-drop HUD layout editor, and an option to hide the HUD outside combat.
 
 [size=4][b]Features[/b][/size]
 [list]
 [*]Every resolution your display supports can be picked in Options > Display. The game hides anything narrower than 16:10 or wider than 32:9, and replaces such a saved resolution at every launch.
-[*]The UI Aspect Mode option is always shown (the game hides it on non-widescreen monitors), with all modes plus a new [b]Custom (Display & UI Tweaks)[/b] mode.
 [*]No black 16:9 bars around the world on non-16:9 screens.
-[*]Menus shrink to fit the UI box instead of being cut off.
-[*]The bounty and challenge boards and the map's detail bar stay inside the UI box as well. The map itself stays full-screen.
+[*]The whole UI (HUD, menus, dialogue) is kept in a UI area of any shape, set with one slider.
+[*]Menus shrink to fit the UI area instead of being cut off.
+[*]Everything stays inside the UI area, also the parts the game pins to the screen edges: the bounty and challenge boards, the map's detail bar, bounties on the HUD, item pickups, the hint bar, the boss bar, the plague meter and the area banner.
 [/list]
 
 New rows at the bottom of [b]Options > Display[/b]:
 [list]
+[*][b]UI Area[/b] (1.00-4.00, default 1.78): the shape of the area the whole UI is kept in, width divided by height. 1.00 = square, 1.78 = 16:9, 2.33 = 21:9, 3.56 = 32:9. Replaces the game's UI Aspect Mode.
 [*][b]HUD & Dialogue UI Size[/b] (10-150%): in-game HUD, overlays and dialogue.
 [*][b]Menu UI Size[/b] (10-150%): inventory, stats, map, settings and the other menus.
-[*][b]Custom UI Aspect Ratio[/b] (1.00-4.00): the width-to-height ratio the whole UI is kept in when UI Aspect Mode is "Custom (Display & UI Tweaks)". 1.00 = square, 1.78 = 16:9, 2.33 = 21:9.
-[*][b]Bounty Board & Map Fix[/b] (on by default): keeps those screens inside the UI box like the other menus.
+[*][b]Edit HUD Layout[/b]: drag, resize and reset HUD elements on top of the game, with sample content in empty elements (chat, item pickups, bounties, teammates, boss bar). Works from the main menu too.
+[*][b]Reset HUD Layout[/b]: every HUD element back where the game has it.
+[*][b]Hide HUD Outside Combat[/b] (Off / On / On, but show health while hurt): fades out health, equipment, money, durability, clock and location a few seconds after combat. Item pickups, hints and chat stay.
 [/list]
-With the defaults on a 16:9 monitor the game looks exactly as before; the mod only adds options.
+With the defaults on a 16:9 monitor the game looks exactly as before. On wider monitors the UI area starts at 16:9: raise UI Area to use more of the screen width.
 
 [size=4][b]Examples[/b][/size]
 [list]
-[*][b]Ultrawide:[/b] set UI Aspect Mode to 16:9, or to Custom with any ratio, to keep the HUD and menus in the middle of the screen.
-[*][b]Square or tall monitor:[/b] pick your resolution, set UI Aspect Mode to Custom and Custom UI Aspect Ratio to 1.00, then adjust HUD & Dialogue UI Size to taste.
+[*][b]Ultrawide:[/b] keep UI Area at 1.78 for a 16:9 UI in the middle of the screen, or raise it (2.33 for 21:9) to spread the UI out.
+[*][b]Square or tall monitor:[/b] pick your resolution, set UI Area to 1.00, then adjust HUD & Dialogue UI Size to taste.
 [*][b]Steam Deck:[/b] works as is; use the size sliders if the text is too small.
 [/list]
 

@@ -7,16 +7,47 @@ using UnityEngine;
 
 namespace DisplayUiTweaks;
 
-/// <summary>Our rows in Options > Display (see docs/internal.md, "Settings rows").</summary>
+/// <summary>Our rows at the end of Options > Display (Mod Settings Tab moves them to its Mods tab); see docs/internal.md,
+/// "Settings rows". Order: UI Area, HUD size, menu size, Edit HUD Layout, Reset HUD Layout, Hide HUD Outside Combat.</summary>
 internal static class SettingsRows
 {
     public const string Prefix = "DUT_";
-    private const string SpacerId = "DUT_Spacer", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale", BoxId = "DUT_BoxAspect", BoxToolkitId = "DUT_BoxUiToolkit";
-    private static readonly string[] AllIds = { SpacerId, HudId, MenuId, BoxId, BoxToolkitId };
+    private const string SpacerId = "DUT_Spacer", AreaId = "DUT_UiArea", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale",
+        EditId = "DUT_EditHud", ResetId = "DUT_ResetHud", HideId = "DUT_HideHud";
+    // 1.0.0 rows (Custom UI Aspect Ratio, Bounty Board & Map Fix): only freed from the registry.
+    private static readonly string[] AllIds = { SpacerId, AreaId, HudId, MenuId, EditId, ResetId, HideId, "DUT_BoxAspect", "DUT_BoxUiToolkit" };
+    private static readonly string[] HideNames = { "Off", "On", "On, but show health while hurt" };
+
+    private const string AreaDescription =
+        "Shape of the area the whole UI is kept in (HUD, menus and dialogue): its width divided by its height. " +
+        "Replaces the game's own UI Aspect Mode setting.\n\n" +
+        "Examples\n" +
+        "1.00 = 1:1 (square)\n" +
+        "1.33 = 4:3\n" +
+        "1.60 = 16:10\n" +
+        "1.78 = 16:9\n" +
+        "2.33 = 21:9\n" +
+        "3.00 = 27:9\n" +
+        "3.56 = 32:9";
 
     private const float HoldRepeatSeconds = 0.3f;
 
     private static readonly Dictionary<string, LocalizedMessage> _messages = new Dictionary<string, LocalizedMessage>();
+    private static readonly Dictionary<string, Func<float>> _sliderValues = new();
+    private static readonly Dictionary<string, Func<int>> _dropdownValues = new();
+
+    /// <summary>
+    /// The main menu and the game each have their own settings screen with their own copy of our rows; a row shows the
+    /// value it was built with. Called when a settings screen opens: every row of ours shows the current value again
+    /// (without calling back).
+    /// </summary>
+    public static void RefreshValues(SettingsScreen screen)
+    {
+        foreach (var slider in screen.GetComponentsInChildren<SliderSettingsItemGUI>(true))
+            if (slider != null && _sliderValues.TryGetValue(slider.gameObject.name, out var get)) slider.SetValue(get(), false);
+        foreach (var dd in screen.GetComponentsInChildren<ActualDropDownSettingsItemGUI>(true))
+            if (dd != null && _dropdownValues.TryGetValue(dd.gameObject.name, out var get)) dd.SetIndex(get(), false);
+    }
 
     /// <summary>Add the rows to every settings screen that already exists (after a hot reload).</summary>
     public static void AddToLiveScreens()
@@ -50,33 +81,45 @@ internal static class SettingsRows
 
         AddSpacer(controls, content);
 
+        AddSlider(controls, content, AreaId,
+            Msg(AreaId, "UI Area"),
+            Msg(AreaId + "_Desc", AreaDescription),
+            Prefs.UiAreaMin, Prefs.UiAreaMax, Prefs.UiAreaStep, () => Prefs.UiAreaValue,
+            v => v.ToString("0.00"),
+            v => { Prefs.UiArea.Value = Mathf.Round(v * 100f) / 100f; DisplayUiTweaksMod.OnLayoutPrefChanged(); });
+
         AddSlider(controls, content, HudId,
             Msg(HudId, "HUD & Dialogue UI Size"),
-            Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue (Display & UI Tweaks)."),
-            Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.HudScalePercent.Value,
+            Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue."),
+            Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, () => Prefs.HudScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
             v => { Prefs.HudScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
         AddSlider(controls, content, MenuId,
             Msg(MenuId, "Menu UI Size"),
-            Msg(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings) (Display & UI Tweaks)."),
-            Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, Prefs.MenuScalePercent.Value,
+            Msg(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings)."),
+            Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, () => Prefs.MenuScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
             v => { Prefs.MenuScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
-        AddSlider(controls, content, BoxId,
-            Msg(BoxId, "Custom UI Aspect Ratio"),
-            Msg(BoxId + "_Desc", "Width-to-height ratio the whole UI is kept in when UI Aspect is set to Custom (Display & UI Tweaks), 1.78 = 16:9, 3.0 = 27:9."),
-            Prefs.UiBoxAspectMin, Prefs.UiBoxAspectMax, Prefs.UiBoxAspectStep, Prefs.UiBoxAspect.Value,
-            v => v.ToString("0.00"),
-            v => { Prefs.UiBoxAspect.Value = Mathf.Round(v * 100f) / 100f; DisplayUiTweaksMod.OnLayoutPrefChanged(); });
+        AddButton(controls, content, EditId,
+            Msg(EditId, "Edit HUD Layout"),
+            Msg(EditId + "_Desc", "Move and resize HUD elements with the mouse, on top of the game, with sample content in empty elements."),
+            () => Hud.HudEditor.Enter());
 
-        AddDropdown(controls, content, BoxToolkitId,
-            Msg(BoxToolkitId, "Bounty Board & Map Fix"),
-            Msg(BoxToolkitId + "_Desc", "Keeps the bounty and challenge boards and the map's detail bar inside the UI box like the other menus. The game only boxes parts of these screens. Turn off to see them as the game draws them (Display & UI Tweaks)."),
-            new[] { "Off", "On" },
-            Prefs.BoxUiToolkitScreens.Value ? 1 : 0,
-            i => { Prefs.BoxUiToolkitScreens.Value = i == 1; DisplayUiTweaksMod.OnLayoutPrefChanged(); });
+        AddButton(controls, content, ResetId,
+            Msg(ResetId, "Reset HUD Layout"),
+            Msg(ResetId + "_Desc", "Put every HUD element back where the game has it, at its normal size."),
+            () => Hud.HudLayout.ResetAll());
+
+        AddDropdown(controls, content, HideId,
+            Msg(HideId, "Hide HUD Outside Combat"),
+            Msg(HideId + "_Desc", "Fades out health, equipment, money, durability, clock and location a few seconds after combat ends; " +
+                                  "they come back when combat starts. The last option keeps the health bar while you are not at full health. " +
+                                  "Item pickups, hints and chat stay."),
+            HideNames,
+            () => Mathf.Clamp(Prefs.HideHudOutsideCombat.Value, 0, HideNames.Length - 1),
+            i => { Prefs.HideHudOutsideCombat.Value = i; Prefs.Save(); });
 
         DisplayUiTweaksMod.Log.Msg("Added Display & UI Tweaks rows to Options > Display");
     }
@@ -91,13 +134,9 @@ internal static class SettingsRows
             if (controls == null) continue;
             // Unregister before destroying, or Back throws on the destroyed dropdown.
             ForgetRows(controls, oursToo: true);
-            var content = DisplayContent(controls);
-            if (content != null)
-                for (int i = content.childCount - 1; i >= 0; i--)
-                {
-                    var child = content.GetChild(i);
-                    if (child != null && child.name.StartsWith(Prefix)) { UnityEngine.Object.DestroyImmediate(child.gameObject); removed++; }
-                }
+            // Anywhere in the screen: Mod Settings Tab moves the rows to its own tab.
+            foreach (var row in s!.GetComponentsInChildren<SettingsItemGUIBase>(true))
+                if (row != null && row.gameObject.name.StartsWith(Prefix)) { UnityEngine.Object.DestroyImmediate(row.gameObject); removed++; }
             RemoveRegistryEntries(controls);
         }
         if (removed > 0) DisplayUiTweaksMod.Log.Msg("Removed " + removed + " settings rows");
@@ -147,7 +186,7 @@ internal static class SettingsRows
     }
 
     private static void AddSlider(SettingsScreenControls controls, RectTransform content, string id, LocalizedMessage name, LocalizedMessage desc,
-        float min, float max, float step, float current, Func<float, string> display, Action<float> onChanged)
+        float min, float max, float step, Func<float> current, Func<float, string> display, Action<float> onChanged)
     {
         int steps = Mathf.Max(1, Mathf.RoundToInt((max - min) / step));
         float increment = 1f / steps;
@@ -162,7 +201,7 @@ internal static class SettingsRows
             PlayerSettingCategory.Display,
             null!,                              // IPlayerSettingAdapter<float>: stored, never read (see class remarks)
             name,
-            ToNormalized(current),
+            ToNormalized(current()),
             changedNormalized,
             increment,
             displayNormalized,
@@ -172,6 +211,7 @@ internal static class SettingsRows
             false,                              // canSelectForFader
             false);                             // showOffOnZero
         NameNewRow(content, before, id);
+        _sliderValues[id] = () => ToNormalized(current());
         // Held-key repeat interval: long enough that a normal key tap is exactly one step.
         if (content.childCount > before)
         {
@@ -180,14 +220,23 @@ internal static class SettingsRows
         }
     }
 
+    /// <summary>A button row, like the game's Reset Tutorials.</summary>
+    private static void AddButton(SettingsScreenControls controls, RectTransform content, string id, LocalizedMessage name, LocalizedMessage desc, Action onClick)
+    {
+        int before = content.childCount;
+        controls.AddButtonItem(id, PlayerSettingCategory.Display, name, onClick, desc);
+        NameNewRow(content, before, id);
+    }
+
     private static void AddDropdown(SettingsScreenControls controls, RectTransform content, string id, LocalizedMessage name, LocalizedMessage desc,
-        string[] options, int current, Action<int> onChanged)
+        string[] options, Func<int> current, Action<int> onChanged)
     {
         var arr = new Il2CppStringArray(options.Length);
         for (int i = 0; i < options.Length; i++) arr[i] = options[i];
         int before = content.childCount;
-        controls.AddActualDropDownItem(PlayerSettingCategory.Display, name, arr, current, onChanged, desc, true, false);
+        controls.AddActualDropDownItem(PlayerSettingCategory.Display, name, arr, current(), onChanged, desc, true, false);
         NameNewRow(content, before, id);
+        _dropdownValues[id] = current;
     }
 
     /// <summary>The same empty divider row the game uses between its own groups.</summary>

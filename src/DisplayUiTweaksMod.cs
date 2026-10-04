@@ -3,8 +3,10 @@ using MelonLoader;
 using DisplayUiTweaks;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.0.0", "vergir")]
+[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.1.0", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
+// Patches are applied in OnInitializeMelon, only when enabled (MelonLoader would otherwise apply them all by itself).
+[assembly: HarmonyDontPatchAll]
 
 namespace DisplayUiTweaks;
 
@@ -31,14 +33,13 @@ public class DisplayUiTweaksMod : MelonMod
             return;
         }
 
-        if (Prefs.UnlockUiAspectModes.Value)
-        {
-            // The game's own debug switches: always show the UI aspect option, with all modes.
-            DisplaySettingsTab.s_forceShowUIAspectSettingForTesting = true;
-            DisplaySettingsTab.s_forceAllUIAspectModesForTesting = true;
-        }
+        // The game's own debug switches: always show the UI aspect option, with all modes (debug only; UI Area replaces it).
+        DisplaySettingsTab.s_forceShowUIAspectSettingForTesting = Prefs.AlwaysShowGameUiAspectOption.Value;
+        DisplaySettingsTab.s_forceAllUIAspectModesForTesting = Prefs.AlwaysShowGameUiAspectOption.Value;
 
         HarmonyInstance.PatchAll(typeof(DisplayUiTweaksMod).Assembly);
+        try { if (UIAspectConstraint.s_globalMode == UIAspectMode.Custom) Patches.InitializeUIAspectModesPatch.Migrate(UIAspectMode.Custom); }
+        catch (System.Exception e) { LoggerInstance.Warning("UI Area migration: " + e.Message); }
         LoggerInstance.Msg("Patches applied.");
 
         // After a hot reload: apply to what is on screen, and give the existing settings screens our rows.
@@ -54,12 +55,16 @@ public class DisplayUiTweaksMod : MelonMod
     /// <summary>Unload / hot reload: undo what is not a Harmony patch.</summary>
     public override void OnDeinitializeMelon()
     {
+        try { Hud.HudEditor.Exit(); Hud.HudLayout.RestoreAll(); Hud.MenuHud.Destroy(); }
+        catch (System.Exception e) { LoggerInstance.Warning("HUD layout restore: " + e.Message); }
         try { UiScaling.RestorePanels(); }
         catch (System.Exception e) { LoggerInstance.Warning("RestorePanels: " + e.Message); }
         try { UiToolkitBoxing.RestoreAll(); }
         catch (System.Exception e) { LoggerInstance.Warning("UiToolkitBoxing.RestoreAll: " + e.Message); }
         try { SettingsRows.RemoveAll(); }
         catch (System.Exception e) { LoggerInstance.Warning("SettingsRows.RemoveAll: " + e.Message); }
+        try { Patches.UiAspectNote.Restore(); }
+        catch (System.Exception e) { LoggerInstance.Warning("UiAspectNote.Restore: " + e.Message); }
         try { UiBox.RestoreFixedRoots(); UiBox.ReapplyAllConstraints(); }
         catch (System.Exception e) { LoggerInstance.Warning("ReapplyAllConstraints: " + e.Message); }
     }
@@ -71,9 +76,15 @@ public class DisplayUiTweaksMod : MelonMod
         _applyAt = Time.unscaledTime + SceneApplyDelay;
     }
 
+    private int _hudErrors;
+    private float _hudPausedUntil;
+
     public override void OnUpdate()
     {
         if (!Prefs.Enabled.Value) return;
+        Hud.HudEditor.BlockGameInput();
+        try { Hud.HideOutsideCombat.Update(); }
+        catch (System.Exception e) { if (_hudErrors++ < 5) LoggerInstance.Warning("Hide HUD Outside Combat: " + e.Message); }
         if (Screen.width != _lastW || Screen.height != _lastH)
         {
             _lastW = Screen.width; _lastH = Screen.height;
@@ -94,6 +105,24 @@ public class DisplayUiTweaksMod : MelonMod
             Prefs.Save();
             Prefs.CommitLayoutValues();
             UiBox.ReapplyAllConstraints();   // SetGlobalMode postfix refits the known panels and UI Toolkit screens
+        }
+    }
+
+    /// <summary>HUD layout and its editor, after the game's own updates.</summary>
+    public override void OnLateUpdate()
+    {
+        if (!Prefs.Enabled.Value || Time.unscaledTime < _hudPausedUntil) return;
+        try
+        {
+            Hud.HudLayout.Tick();
+            Hud.HudEditor.Tick();
+            DevCommands.Tick();
+        }
+        catch (System.Exception e)
+        {
+            // HUDs come and go with loading screens and sessions: pause and retry.
+            if (_hudErrors++ < 10) LoggerInstance.Warning("HUD layout: " + e);
+            _hudPausedUntil = Time.unscaledTime + 2f;
         }
     }
 

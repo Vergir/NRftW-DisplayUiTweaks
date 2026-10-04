@@ -24,10 +24,12 @@ internal static class UiBox
             case UIAspectMode.Aspect16x9: return Aspect16x9;
             case UIAspectMode.Aspect21x9: return Aspect21x9;
             case UIAspectMode.Aspect32x9: return Aspect32x9;
-            case UIAspectMode.Custom:     return Prefs.BoxAspect;
-            default:                      return Aspect16x9;
+            default:                      return Aspect16x9; // Custom: never offered by the game (1.0.0 used it)
         }
     }
+
+    /// <summary>Aspect of the global UI box: the UI Area setting (it replaces the game's UI Aspect Mode).</summary>
+    public static float GlobalAspect() => Prefs.UiAreaAspect;
 
     /// <summary>The largest box of the target aspect inside a parent of the given size (the parent itself when 0 = Native).</summary>
     public static Vector2 FitBox(Vector2 parent, float targetAspect)
@@ -41,7 +43,7 @@ internal static class UiBox
     public static Vector2 GlobalBoxSizePx()
     {
         var screen = new Vector2(Screen.width, Screen.height);
-        return FitBox(screen, TargetAspect(UIAspectConstraint.s_globalMode));
+        return FitBox(screen, GlobalAspect());
     }
 
     /// <summary>True when the global UI does not cover the whole screen.</summary>
@@ -57,9 +59,9 @@ internal static class UiBox
         Vector2 parent = c.GetParentSize();
         if (parent.x <= 0f || parent.y <= 0f) return;
 
-        UIAspectMode mode = (c.m_useGlobalMode && Application.isPlaying) ? UIAspectConstraint.s_globalMode : c.m_mode;
+        bool global = c.m_useGlobalMode && Application.isPlaying;
         RectTransform rt = c.m_rectTransform;
-        float target = TargetAspect(mode);
+        float target = global ? GlobalAspect() : TargetAspect(c.m_mode);
 
         if (target <= 0f)
         {
