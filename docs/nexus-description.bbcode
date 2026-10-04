@@ -1,59 +1,73 @@
 [size=5][b]Display & UI Tweaks[/b][/size]
 
-Play No Rest for the Wicked on any screen shape: ultrawide, 16:10, square, tall, and the Steam Deck. The mod unlocks every resolution, adds UI area and UI size settings to the game's own Options menu, a drag-and-drop HUD layout editor, and an option to hide the HUD outside combat.
+Play on any screen shape, from ultrawide to square to the Steam Deck, and put the HUD where you want it: drag health, clock, chat and the rest around the screen.
+With the defaults on a 16:9 monitor nothing looks different until you change a setting.
 
 [size=4][b]Features[/b][/size]
 [list]
-[*]Every resolution your display supports can be picked in Options > Display. The game hides anything narrower than 16:10 or wider than 32:9, and replaces such a saved resolution at every launch.
-[*]No black 16:9 bars around the world on non-16:9 screens.
-[*]The whole UI (HUD, menus, dialogue) is kept in a UI area of any shape, set with one slider.
-[*]Menus shrink to fit the UI area instead of being cut off.
-[*]Everything stays inside the UI area, also the parts the game pins to the screen edges: the bounty and challenge boards, the map's detail bar, bounties on the HUD, item pickups, the hint bar, the boss bar, the plague meter and the area banner.
+[*][b]Any resolution:[/b] every resolution your display supports can be picked in [i]Options > Display[/i]; the game hides anything narrower than 16:10 or wider than 32:9.[/*]
+[*][b]No black bars:[/b] the world fills the whole screen on non-16:9 monitors instead of a 16:9 letterbox.[/*]
+[*][b]UI Area:[/b] the whole UI (HUD, menus, dialogue) is kept in an area of any shape, set with one slider. Menus shrink to fit it instead of being cut off, and the parts the game pins to the screen edges stay inside it too.[/*]
+[*][b]UI size:[/b] one size for the HUD and dialogue, one for the menus.[/*]
+[*][b]Edit HUD Layout:[/b] the HUD appears over the game, with sample content in empty elements (chat, item pickups, a bounty, teammates, a boss bar). Drag to move, mouse wheel to resize, right click to put back. Works from the main menu too.[/*]
+[*][b]Bigger chat:[/b] in the editor, drag the chat window's corner bracket to make it wider and taller; a taller chat shows more lines.[/*]
+[*][b]Hide HUD Outside Combat:[/b] health, equipment, money, durability, clock and location fade out 5 seconds after combat and come back when it starts. Item pickups, hints and chat stay.[/*]
+[*][b]Live previews:[/b] an outline of the UI area, or a half-transparent HUD, is drawn over the menu while you adjust those rows.[/*]
 [/list]
+Positions are kept relative to the UI area, so a layout survives resolution and size changes.
 
-New rows at the bottom of [b]Options > Display[/b]:
+[size=4][b]What it does not do[/b][/size]
 [list]
-[*][b]UI Area[/b] (1.00-4.00, default 1.78): the shape of the area the whole UI is kept in, width divided by height. 1.00 = square, 1.78 = 16:9, 2.33 = 21:9, 3.56 = 32:9. Replaces the game's UI Aspect Mode.
-[*][b]HUD & Dialogue UI Size[/b] (10-150%): in-game HUD, overlays and dialogue.
-[*][b]Menu UI Size[/b] (10-150%): inventory, stats, map, settings and the other menus.
-[*][b]Edit HUD Layout[/b]: drag, resize and reset HUD elements on top of the game, with sample content in empty elements (chat, item pickups, bounties, teammates, boss bar). Works from the main menu too.
-[*][b]Reset HUD Layout[/b]: every HUD element back where the game has it.
-[*][b]Hide HUD Outside Combat[/b] (Off / On / On, but show health while hurt): fades out health, equipment, money, durability, clock and location a few seconds after combat. Item pickups, hints and chat stay.
-[/list]
-With the defaults on a 16:9 monitor the game looks exactly as before. On wider monitors the UI area starts at 16:9: raise UI Area to use more of the screen width.
-
-[size=4][b]Examples[/b][/size]
-[list]
-[*][b]Ultrawide:[/b] keep UI Area at 1.78 for a 16:9 UI in the middle of the screen, or raise it (2.33 for 21:9) to spread the UI out.
-[*][b]Square or tall monitor:[/b] pick your resolution, set UI Area to 1.00, then adjust HUD & Dialogue UI Size to taste.
-[*][b]Steam Deck:[/b] works as is; use the size sliders if the text is too small.
+[*]It moves and sizes the HUD elements the game already has; it adds none (no minimap).[/*]
+[*]It does not rearrange menus, the map or dialogue: those only follow UI Area and Menu UI Size.[/*]
 [/list]
 
 [size=4][b]Requirements[/b][/size]
 [list]
-[*][url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader[/url] 0.7.3 or newer.
+[*][url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader[/url] 0.7.3 or newer.[/*]
 [/list]
 
 [size=4][b]Installation[/b][/size]
 [list=1]
-[*]Install MelonLoader into the game folder and start the game once.
-[*]Extract the mod's zip into the game folder, so that [i]DisplayUiTweaks.dll[/i] ends up in the [i]Mods[/i] folder.
+[*]Install MelonLoader into the game folder and start the game once.[/*]
+[*]Extract the mod's zip into the game folder, so that [i]DisplayUiTweaks.dll[/i] ends up in the [i]Mods[/i] folder.[/*]
 [/list]
-
 [b]Steam Deck / Linux (Proton):[/b]
 [list=1]
-[*]Copy the files from MelonLoader's [i]MelonLoader.x64.zip[/i] (the Windows build) into the game folder, and the mod into [i]Mods[/i].
-[*]In Steam, open the game's Properties > General > Launch Options and enter: [code]WINEDLLOVERRIDES="version=n,b" %command%[/code]
-[*]Start the game. On the first start MelonLoader installs the .NET runtime it needs by itself; that start takes a minute or two.
+[*]Copy the files from MelonLoader's [i]MelonLoader.x64.zip[/i] (the Windows build) into the game folder, and the mod into [i]Mods[/i].[/*]
+[*]In Steam, open the game's Properties > General > Launch Options and enter:
+[code]WINEDLLOVERRIDES="version=n,b" %command%[/code][/*]
+[*]Start the game. On the first start MelonLoader installs the .NET runtime it needs by itself; that start takes a minute or two.[/*]
 [/list]
+[b]Uninstall:[/b] delete [i]Mods\DisplayUiTweaks.dll[/i]. The HUD and the game's UI Aspect Mode return to normal; a resolution the game does not list is replaced at the next start. Your settings and layout stay in [i]UserData\MelonPreferences.cfg[/i]; delete the [DisplayUiTweaks] section if you want them gone too. Nothing in the save was changed.
 
 [size=4][b]Compatibility[/b][/size]
 [list]
-[*]Tested with game build 29466 and MelonLoader 0.7.3 on Windows and on a Steam Deck.
-[*]Display only: nothing in the game simulation or your save is changed, so it does not affect co-op.
-[*]All settings are also in [i]UserData/MelonPreferences.cfg[/i], section [DisplayUiTweaks], including a switch for each feature.
+[*][b]Game version:[/b] made for No Rest for the Wicked "The Breach", tested with build 29466 and MelonLoader 0.7.3 on Windows; version 1.0.0 also on a Steam Deck.[/*]
+[*][b]After a game update:[/b] if the game renames what the mod hooks, the mod does not load and the MelonLoader log says so; the game then runs as without it. A HUD element the mod no longer finds stays where the game puts it.[/*]
+[*][b]Co-op and saves:[/b] Display only: nothing in the game simulation or your save is changed, so it does not affect co-op.[/*]
+[*][b]Other mods:[/b] no known conflicts; another mod that changes the UI scale or aspect would fight over the same settings.[/*]
+[*][b]Coming from 1.0.0:[/b] a "Custom (Display & UI Tweaks)" UI aspect setup is carried over to UI Area once.[/*]
 [/list]
 
-[size=4][b]Source[/b][/size]
-Source code, changelog and issue tracker: [url=https://github.com/vergir/NRftW-DisplayUiTweaks]https://github.com/vergir/NRftW-DisplayUiTweaks[/url]
-License: MIT
+[size=4][b]Settings[/b][/size]
+At the end of [i]Options > Display[/i]:
+[list]
+[*][b]UI Area[/b] (1.00-4.00, default 1.78): width divided by height of the area the UI is kept in. 1.00 = square, 1.78 = 16:9, 2.33 = 21:9, 3.56 = 32:9. Replaces the game's UI Aspect Mode.[/*]
+[*][b]HUD & Dialogue UI Size[/b] (10-150%, default 100%): HUD, overlays and dialogue.[/*]
+[*][b]Menu UI Size[/b] (10-150%, default 100%): inventory, stats, map, settings and the other menus.[/*]
+[*][b]Edit HUD Layout[/b] (button): opens the editor; Tab picks between overlapping elements, Esc closes.[/*]
+[*][b]Reset HUD Layout[/b] (button): every element back where the game has it, chat size included.[/*]
+[*][b]Hide HUD Outside Combat[/b] (Off / On / On, but show health while hurt; default Off).[/*]
+[/list]
+Ultrawide: 1.78 keeps a 16:9 UI in the middle; raise it to spread the UI out. Square or tall monitor: 1.00.
+The same settings are in [i]UserData\MelonPreferences.cfg[/i], section [DisplayUiTweaks], plus the fade delay ([i]HideHudDelay[/i]) and a switch for each feature.
+
+[size=4][b]Source and support[/b][/size]
+Source code, changelog and issue tracker: [url=https://github.com/vergir/NRftW-DisplayUiTweaks]GitHub[/url] · License: MIT
+Problems: the [b]Bugs[/b] tab here or a GitHub issue; please include the [i]MelonLoader\Latest.log[/i] file, the game build (shown in the main menu's corner), your resolution and the UI Area value. For something drawn in the wrong place, a screenshot is enough.
+
+
+[color=#999999]=============================== NEXUS "SUMMARY" FIELD ===============================
+Any screen shape from ultrawide to square, UI size settings, and a drag-and-drop HUD layout editor.
+=====================================================================================[/color]
