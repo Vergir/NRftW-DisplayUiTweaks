@@ -1,21 +1,25 @@
-"""Builds the 1.1 Nexus images in docs/pics/nexus from the raw screenshots in docs/pics (shot list:
-nexus-pages/shots/DisplayUiTweaks/SHOTLIST.md). The 1.0 images that are still correct (hud_size, ultrawide_menu,
-ultrawide_stats, header) come from make_nexus_images.ps1.
+"""Builds every Nexus / README image in docs/pics/nexus from the raw screenshots in docs/pics (shot list:
+nexus-pages/shots/DisplayUiTweaks/SHOTLIST.md). File names are numbered in gallery order. header.jpg (README / Nexus page header, 1300x372)
+is the 1.0 one, built by make_nexus_images.ps1 (removed; in git history at 69fbe0a).
 
-Needs Pillow and numpy (pip install pillow numpy). Usage: python make_nexus_images.py [--thumbs]
-Raw screenshots (git-ignored) were taken on a 2878x2559 (9:8) monitor: full-monitor captures, or snips of the game band.
-House rules (nexus-pages/house-rules.md): captions and a rounded box are the only highlighting; the main image is 16:9
-with the mod name as the biggest text; no black bars.
+Needs Pillow, numpy and OpenCV (pip install pillow numpy opencv-python-headless). Usage: python make_nexus_images.py
+[--thumbs]. Raw screenshots (git-ignored) were taken on a 2878x2559 (9:8) monitor: full-monitor captures, or snips of
+the game band. hide_hud.gif (made by hand) is copied in as 03_hide_hud.gif (git-ignored, 8 MB).
+House rules (nexus-pages/house-rules.md): captions and a rounded box are the only highlighting, full frames may dim the
+rest to 60%; the main image is 16:9 with the mod name as the biggest text; no black bars.
 """
 import os
+import shutil
 import sys
 
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "nexus")
 FONT = "C:/Windows/Fonts/segoeuib.ttf"
+FONT_LIGHT = "C:/Windows/Fonts/segoeui.ttf"
 GOLD = (216, 201, 163)
 W, H = 1920, 1080
 
@@ -25,30 +29,56 @@ SHOTS = {
     "uw_vanilla": ("Screenshot 2026-10-05 172946.png", (0, 98, 2878, 1058)),     # 3:1, game's default UI
     "uw_mod": ("Screenshot 2026-10-05 172929.png", (0, 98, 2878, 1058)),         # 3:1, UI Area 1.78
     "sq_vanilla": ("Screenshot 2026-10-05 173345.png", (0, 0, 2878, 2505)),      # 9:8 monitor, the game's 16:9 band
-    "sq_mod": ("Screenshot 2026-10-05 173419.png", (0, 0, 2878, 2505)),          # 9:8, UI Area 1.00
+    "sq_mod": ("Screenshot 2026-10-05 173419.png", (0, 0, 2878, 2505)),          # 9:8, HUD in the screen corners (UI Area at or above 1.125)
     "editor_panel": ("Screenshot 2026-10-05 173512.png", (0, 470, 2878, 2090)),  # 16:9, instructions readable
     "editor": ("Screenshot 2026-10-05 173534.png", (0, 470, 2878, 2090)),        # 16:9, mid-drag on the chat bracket
     "layout_play": ("mpv-shot0001.jpg", (0, 470, 2880, 2090)),                   # 16:9 video frame, moved HUD in a fight
     "preview_area": ("Screenshot 2026-10-05 174630.png", (0, 470, 2878, 2090)),  # UI Area row, outline at 1.50
     "preview_hud": ("Screenshot 2026-10-05 174655.png", (0, 470, 2878, 2090)),   # HUD size row, HUD copy at 50%
     "settings": ("Screenshot 2026-10-05 175027.png", (0, 169, 2878, 1789)),      # 16:9, with the heading row
+    # 1.0 shots (2026-09-27), still correct
+    "hud_75": ("ui_75_pct.png", (0, 71, 2878, 1691)),
+    "hud_100": ("ui_100_pct.png", (0, 101, 2878, 1721)),
+    "hud_125": ("ui_125_pct.png", (0, 88, 2878, 1708)),
+    "uw_menu": ("ultrawide_with_mod_menu.png", (0, 89, 2878, 1049)),             # 3:1, vendor, UI Aspect 16:9
+    "uw_stats": ("ultrawide_with_mod_stats.png", (0, 108, 2878, 1068)),          # 3:1, stats
+    "uw_header": ("3_by_1_with_mod.png", (0, 107, 2878, 1067)),
 }
 
+# Raw-pixel boxes to paint out before cropping (the mouse cursor in the video frame).
+RETOUCH = {"layout_play": [(855, 1620, 900, 1678)]}
+
 _cache = {}
+
+
+def retouch(im, boxes):
+    """Inpaint the bright cursor pixels inside each box from their surroundings."""
+    a = np.asarray(im).copy()
+    mask = np.zeros(a.shape[:2], np.uint8)
+    for l, t, r, b in boxes:
+        g = a[t:b, l:r].astype(float).mean(axis=2)
+        m = (g > 110) | (g < 12)  # the white arrow and its black outline
+        mask[t:b, l:r] = m.astype(np.uint8) * 255
+    mask = cv2.dilate(mask, np.ones((5, 5), np.uint8))
+    out = cv2.inpaint(a[:, :, ::-1], mask, 7, cv2.INPAINT_TELEA)[:, :, ::-1]
+    return Image.fromarray(out)
 
 
 def shot(key):
     if key not in _cache:
         name, crop = SHOTS[key]
-        _cache[key] = Image.open(os.path.join(HERE, name)).convert("RGB").crop(crop)
+        im = Image.open(os.path.join(HERE, name)).convert("RGB")
+        if key in RETOUCH:
+            im = retouch(im, RETOUCH[key])
+        _cache[key] = im.crop(crop)
     return _cache[key]
 
 
-def font(size):
-    return ImageFont.truetype(FONT, size)
+def font(size, light=False):
+    return ImageFont.truetype(FONT_LIGHT if light else FONT, size)
 
 
-def box(img, b, k=1.0):
+def box(img, b, k=1.0, dashed=False):
     """The highlight: a rounded gold outline, 5 px wide, radius 14 at a 1080 px tall image (k = image height / 1080)."""
     w = max(3, round(5 * k))
     ImageDraw.Draw(img).rounded_rectangle(b, round(14 * k), outline=GOLD, width=w)
@@ -91,51 +121,80 @@ def backdrop(key, dim=0.75, blur=6):
     return ImageEnhance.Brightness(im).enhance(dim).convert("RGBA")
 
 
+def sized(key, w, h, bright=1.0):
+    im = shot(key).resize((w, h), Image.LANCZOS)
+    return ImageEnhance.Brightness(im).enhance(bright) if bright != 1.0 else im
+
+
 def fit(key, w, h):
     im = shot(key)
     s = min(w / im.width, h / im.height)
-    return im.resize((round(im.width * s), round(im.height * s)), Image.LANCZOS)
+    return sized(key, round(im.width * s), round(im.height * s))
+
+
+def ui_area(img, rect, k=1.0, dim=0.6, text="UI area"):
+    """The UI area of a panel: everything outside it dimmed, a gold outline, a small label at its top edge."""
+    rect = tuple(round(v) for v in rect)
+    dark = ImageEnhance.Brightness(img).enhance(dim)
+    mask = Image.new("L", img.size, 0)
+    ImageDraw.Draw(mask).rectangle(rect, fill=255)
+    out = Image.composite(img, dark, mask).convert("RGBA")
+    box(out, rect, k)
+    if text:
+        f = font(max(18, round(30 * k)))
+        d = ImageDraw.Draw(out, "RGBA")
+        xy = ((rect[0] + rect[2]) // 2, rect[3] - round(8 * k))
+        l, t, r, b = d.textbbox(xy, text, font=f, anchor="md")
+        p = round(8 * k)
+        d.rounded_rectangle((l - p, t - p, r + p, b + p), p, fill=(0, 0, 0, 170))
+        d.text(xy, text, font=f, fill=GOLD, anchor="md")
+    return out
 
 
 def save(img, name):
     os.makedirs(OUT, exist_ok=True)
     img.convert("RGB").save(os.path.join(OUT, name), quality=92)
-    print(f"{name:24} {img.width}x{img.height} {os.path.getsize(os.path.join(OUT, name)) // 1024:5} KB")
+    print(f"{name:26} {img.width}x{img.height} {os.path.getsize(os.path.join(OUT, name)) // 1024:5} KB")
 
 
-def pair_side_by_side(keys, labels, top, bottom, gap=40, size=64, bg="sq_mod", title=None):
-    img = backdrop(bg)
-    if title:
-        outlined(img, title, (W // 2, 112), 150)
-    ph = bottom - top
-    a, b = (fit(k, (W - 2 * 40 - gap) // 2, ph) for k in keys)
-    x = (W - a.width - b.width - gap) // 2
-    for im, lbl in ((a, labels[0]), (b, labels[1])):
-        shadowed_paste(img, im.convert("RGBA"), (x, top))
-        label(img, lbl, (x + 20, top + 20), size)
-        x += im.width + gap
-    return img
-
+# ---- 01 main image / tile ------------------------------------------------------------------------------------------
 
 def main_image():
-    """Main image = listing tile: the 9:8 monitor, the game's 16:9 band vs the mod filling the screen, the name on top."""
-    img = pair_side_by_side(("sq_vanilla", "sq_mod"), ("Vanilla", "With mod"), 216, H - 36, title="Display & UI Tweaks")
-    save(img, "1_main.jpg")
+    """Main image = listing tile: two features at once. Left, the 9:8 monitor without and with the mod (bars vs the
+    whole screen); right, the HUD editor with its sample content. The name on top."""
+    img = backdrop("sq_mod", dim=0.7)
+    outlined(img, "Display & UI Tweaks", (W // 2, 100), 150)
+    top, bottom, m, gap = 200, H - 34, 34, 22
+    ph = (bottom - top - gap) // 2
+    pw = round(ph * 2878 / 2505)
+    for i, (k, lbl) in enumerate((("sq_vanilla", "Vanilla"), ("sq_mod", "With mod"))):
+        y = top + i * (ph + gap)
+        shadowed_paste(img, sized(k, pw, ph).convert("RGBA"), (m, y))
+        label(img, lbl, (m + 14, y + 14), 44)
+    ex = m + pw + 30
+    ew = W - ex - m
+    eh = round(ew * 9 / 16)
+    ey = top + (bottom - top - eh) // 2
+    shadowed_paste(img, sized("editor_panel", ew, eh).convert("RGBA"), (ex, ey))
+    label(img, "Edit HUD Layout", (ex + 18, ey + eh - 18), 56, anchor="ld")
+    save(img, "01_main.jpg")
     return img
 
 
-def ultrawide():
-    """3:1, top-bottom: the game's default UI across the whole width vs UI Area 1.78 (a 16:9 UI in the middle)."""
-    img = backdrop("uw_mod")
-    m, gap = 36, 24
-    ph = (H - 2 * m - gap) // 2
-    pw = ph * 3
-    x = (W - pw) // 2
-    for i, (k, lbl) in enumerate((("uw_vanilla", "Game default"), ("uw_mod", "UI Area 1.78"))):
-        y = m + i * (ph + gap)
-        shadowed_paste(img, shot(k).resize((pw, ph), Image.LANCZOS).convert("RGBA"), (x, y))
-        label(img, lbl, (x + pw - 20, y + ph - 20), 56, anchor="rd")
-    save(img, "2_ultrawide.jpg")
+# ---- gallery -------------------------------------------------------------------------------------------------------
+
+def square():
+    """The 9:8 monitor, side by side: the game's 16:9 band vs the mod filling the screen."""
+    img = backdrop("sq_mod")
+    top, bottom, gap = 130, H - 36, 40
+    a, b = fit("sq_vanilla", (W - 80 - gap) // 2, bottom - top), fit("sq_mod", (W - 80 - gap) // 2, bottom - top)
+    x = (W - a.width - b.width - gap) // 2
+    for im, lbl in ((a, "Vanilla"), (b, "With mod")):
+        shadowed_paste(img, im.convert("RGBA"), (x, top))
+        label(img, lbl, (x + 20, top + 20), 56)
+        x += im.width + gap
+    label(img, "Square and tall monitors", (W // 2, 64), 64, anchor="mm")
+    save(img, "02_square.jpg")
 
 
 def full_frame(key, out, caption, boxes=(), cap_xy=(40, H - 40), anchor="ld"):
@@ -155,7 +214,43 @@ def chat_resize():
     img = shot("editor").crop((l, t, l + 1280, t + 720)).convert("RGBA")
     box(img, (2245 - l, 1000 - t, 2868 - l, 1445 - t), 720 / 1080)
     label(img, "Chat: drag the corner to resize", (30, 30), 48)
-    save(img, "4_chat_resize.jpg")
+    save(img, "05_chat_resize.jpg")
+
+
+def three_to_one(pairs, out, title=None, bright=1.0):
+    """3:1 panels stacked on a blurred backdrop; pairs = [(shot, label, ui-area width in parts of the panel or None)]."""
+    img = backdrop(pairs[-1][0])
+    m, gap = 36, 24
+    top = 120 if title else m
+    ph = (H - top - m - gap * (len(pairs) - 1)) // len(pairs)
+    pw = ph * 3
+    x = (W - pw) // 2
+    for i, (k, lbl, area) in enumerate(pairs):
+        y = top + i * (ph + gap)
+        p = sized(k, pw, ph, bright)
+        if area:
+            aw = pw * area
+            p = ui_area(p, ((pw - aw) / 2, 4, (pw + aw) / 2 - 1, ph - 5), ph / 540)
+        shadowed_paste(img, p.convert("RGBA"), (x, y))
+        label(img, lbl, (x + 20, y + 20), 48)
+    if title:
+        label(img, title, (W // 2, 62), 60, anchor="mm")
+    save(img, out)
+
+
+def hud_size():
+    """HUD 75 / 100 / 125%: the left third of each 16:9 frame (the health and equipment corner), side by side."""
+    img = Image.new("RGBA", (W, H))
+    cw = W // 3
+    for i, (k, lbl) in enumerate((("hud_75", "HUD 75%"), ("hud_100", "HUD 100%"), ("hud_125", "HUD 125%"))):
+        im = shot(k)
+        crop = im.crop((0, 0, round(im.height * cw / H), im.height)).resize((cw, H), Image.LANCZOS)
+        img.paste(ImageEnhance.Brightness(crop).enhance(1.25), (i * cw, 0))
+        label(img, lbl, (i * cw + cw // 2, H // 2), 64, anchor="mm")
+    d = ImageDraw.Draw(img)
+    for i in (1, 2):
+        d.line((i * cw, 0, i * cw, H), fill=(0, 0, 0), width=4)
+    save(img, "08_hud_size.jpg")
 
 
 def settings():
@@ -163,7 +258,7 @@ def settings():
     im = shot("settings").crop((60, 200, 2560, 1580))
     img = im.convert("RGBA")
     label(img, "Options > Display", (img.width - 40, img.height - 40), 72, anchor="rd")
-    save(img, "8_settings.jpg")
+    save(img, "12_settings.jpg")
 
 
 def thumbs(img):
@@ -176,14 +271,21 @@ def thumbs(img):
 
 if __name__ == "__main__":
     tile = main_image()
-    ultrawide()
-    full_frame("editor_panel", "3_editor.jpg", "Edit HUD Layout", cap_xy=(W - 40, 560), anchor="rm")
+    square()
+    if os.path.exists(os.path.join(HERE, "hide_hud.gif")):
+        shutil.copyfile(os.path.join(HERE, "hide_hud.gif"), os.path.join(OUT, "03_hide_hud.gif"))
+    full_frame("editor_panel", "04_editor.jpg", "Edit HUD Layout", cap_xy=(W - 40, 560), anchor="rm")
     chat_resize()
     # Health moved to the bottom centre, equipment to the bottom right.
-    full_frame("layout_play", "5_layout_play.jpg", "Custom HUD layout", cap_xy=(40, 40), anchor="la",
+    full_frame("layout_play", "06_move_hud.jpg", "Move HUD elements", cap_xy=(40, 40), anchor="la",
                boxes=[(1070, 1345, 1715, 1600), (2200, 1295, 2862, 1585)])
-    full_frame("preview_area", "6_preview_area.jpg", "Live preview: UI Area 1.50", cap_xy=(W - 40, H - 40), anchor="rd")
-    full_frame("preview_hud", "7_preview_hud.jpg", "Live preview: HUD size 50%", cap_xy=(W - 40, H - 40), anchor="rd")
+    three_to_one([("uw_vanilla", "Game default", 1.0), ("uw_mod", "With mod: UI Area 1.78", 16 / 9 / 3)],
+                 "07_ultrawide.jpg")
+    hud_size()
+    three_to_one([("uw_menu", "Vendor", 16 / 9 / 3), ("uw_stats", "Stats", 16 / 9 / 3)], "09_menus.jpg",
+                 title="Menus stay in the UI area", bright=1.5)
+    full_frame("preview_area", "10_ui_area.jpg", "Change UI Area", cap_xy=(W - 40, H - 40), anchor="rd")
+    full_frame("preview_hud", "11_hud_size_setting.jpg", "Change HUD size", cap_xy=(W - 40, H - 40), anchor="rd")
     settings()
     if "--thumbs" in sys.argv:
         thumbs(tile)
