@@ -106,10 +106,13 @@ internal static class HudSamples
     }
 
     /// <summary>
-    /// Showcase: every real item pickup gets a static copy in its place (its animator and script off, fully shown), and
+    /// Showcase: every real item pickup gets a static copy in its place (its animator and script off, as it looks once its
+    /// slide-in has settled), and
     /// the original is shrunk out of the layout, so the pickup stays while the game removes the original on its own
     /// schedule. Blocking the views' fade-out did not keep them.
     /// </summary>
+    private const float PickupSettleSeconds = 1f;
+
     private static void KeepPickups(PlayerHUD hud)
     {
         var v = hud.NewItemsView;
@@ -124,7 +127,8 @@ internal static class HudSamples
             var c = group.GetChild(i);
             if (!c.gameObject.activeSelf || c.name.StartsWith("DUT_") || _shrunk.Exists(s => s.t == c)) continue;
             if (!_pickupSeen.TryGetValue(c.Pointer, out var seen)) { _pickupSeen[c.Pointer] = now; continue; }
-            if (now - seen < 0.15f) continue; // its name and icon are set by then
+            // Copied once its slide-in has settled: a copy taken during the intro froze its highlight (a pale panel).
+            if (now - seen < PickupSettleSeconds) continue;
             _pickupSeen.Remove(c.Pointer);
             var copy = Object.Instantiate(c.gameObject);
             copy.transform.parent = group;
@@ -135,12 +139,6 @@ internal static class HudSamples
             var view = copy.GetComponent<PlayerNewItemView>();
             if (view != null) { if (view.ItemAnimator != null) view.ItemAnimator.enabled = false; view.enabled = false; }
             foreach (var anim in copy.GetComponentsInChildren<Animator>(true)) anim.enabled = false;
-            for (int k = 0; k < copy.transform.childCount; k++)
-            {
-                var crt = copy.transform.GetChild(k).TryCast<RectTransform>();
-                if (crt != null) crt.anchoredPosition = new Vector2(0f, crt.anchoredPosition.y);
-            }
-            foreach (var cg in copy.GetComponentsInChildren<CanvasGroup>(true)) cg.alpha = 1f;
             _spawned.Add(copy);
             var le = c.GetComponent<LayoutElement>();
             bool added = le == null;
