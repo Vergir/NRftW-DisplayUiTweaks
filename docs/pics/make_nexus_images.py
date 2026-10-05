@@ -28,6 +28,7 @@ SHOTS = {
     "sq_mod": ("Screenshot 2026-10-05 173419.png", (0, 0, 2878, 2505)),          # 9:8, UI Area 1.00
     "editor_panel": ("Screenshot 2026-10-05 173512.png", (0, 470, 2878, 2090)),  # 16:9, instructions readable
     "editor": ("Screenshot 2026-10-05 173534.png", (0, 470, 2878, 2090)),        # 16:9, mid-drag on the chat bracket
+    "layout_play": ("mpv-shot0001.jpg", (0, 470, 2880, 2090)),                   # 16:9 video frame, moved HUD in a fight
     "preview_area": ("Screenshot 2026-10-05 174630.png", (0, 470, 2878, 2090)),  # UI Area row, outline at 1.50
     "preview_hud": ("Screenshot 2026-10-05 174655.png", (0, 470, 2878, 2090)),   # HUD size row, HUD copy at 50%
     "settings": ("Screenshot 2026-10-05 175027.png", (0, 169, 2878, 1789)),      # 16:9, with the heading row
@@ -148,12 +149,21 @@ def full_frame(key, out, caption, boxes=(), cap_xy=(40, H - 40), anchor="ld"):
     save(img, out)
 
 
+def chat_resize():
+    """A 1280x720 window of the editor shot around the chat window being resized (raw frame pixels), shown 1:1."""
+    l, t = 1598, 900
+    img = shot("editor").crop((l, t, l + 1280, t + 720)).convert("RGBA")
+    box(img, (2245 - l, 1000 - t, 2868 - l, 1445 - t), 720 / 1080)
+    label(img, "Chat: drag the corner to resize", (30, 30), 48)
+    save(img, "4_chat_resize.jpg")
+
+
 def settings():
     """The rows with the heading and the description panel, cropped (raw frame pixels)."""
     im = shot("settings").crop((60, 200, 2560, 1580))
     img = im.convert("RGBA")
     label(img, "Options > Display", (img.width - 40, img.height - 40), 72, anchor="rd")
-    save(img, "7_settings.jpg")
+    save(img, "8_settings.jpg")
 
 
 def thumbs(img):
@@ -167,13 +177,13 @@ def thumbs(img):
 if __name__ == "__main__":
     tile = main_image()
     ultrawide()
-    # The chat window mid-resize: its bracket, the sample lines and the instructions panel behind.
-    full_frame("editor", "3_editor.jpg", "Edit HUD Layout", boxes=[(2245, 1000, 2868, 1445)], cap_xy=(W - 40, 560),
-               anchor="rm")
-    full_frame("editor_panel", "4_editor_panel.jpg", "Sample content", cap_xy=(W - 40, 560),
-               anchor="rm")
-    full_frame("preview_area", "5_preview_area.jpg", "Live preview: UI Area 1.50", cap_xy=(W - 40, H - 40), anchor="rd")
-    full_frame("preview_hud", "6_preview_hud.jpg", "Live preview: HUD size 50%", cap_xy=(W - 40, H - 40), anchor="rd")
+    full_frame("editor_panel", "3_editor.jpg", "Edit HUD Layout", cap_xy=(W - 40, 560), anchor="rm")
+    chat_resize()
+    # Health moved to the bottom centre, equipment to the bottom right.
+    full_frame("layout_play", "5_layout_play.jpg", "Custom HUD layout", cap_xy=(40, 40), anchor="la",
+               boxes=[(1070, 1345, 1715, 1600), (2200, 1295, 2862, 1585)])
+    full_frame("preview_area", "6_preview_area.jpg", "Live preview: UI Area 1.50", cap_xy=(W - 40, H - 40), anchor="rd")
+    full_frame("preview_hud", "7_preview_hud.jpg", "Live preview: HUD size 50%", cap_xy=(W - 40, H - 40), anchor="rd")
     settings()
     if "--thumbs" in sys.argv:
         thumbs(tile)
