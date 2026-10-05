@@ -49,6 +49,34 @@ internal static class HudSamples
         "vergir: sample lines for the HUD editor: drag the chat's corner bracket to make the window wider or taller",
     };
 
+    /// <summary>Showcase (dev-only screenshots): the same chatter without the editor's own line.</summary>
+    private static string[] ShowcaseLines => ChatLines[..^1];
+
+    /// <summary>
+    /// Showcase mode for screenshots (DevCommands, dev-only): realistic chat lines in the live chat, kept visible, and the
+    /// bounty / challenge panel kept up while it has real rows. Nothing else is forced or faked; End() undoes it.
+    /// </summary>
+    public static void BeginShowcase(PlayerHUD hud)
+    {
+        Chat(hud, ShowcaseLines);
+        Activities(hud, fakeRows: false);
+        ShowcaseVisible(hud);
+    }
+
+    /// <summary>Every frame while the showcase is on, after the game's own fades.</summary>
+    public static void ShowcaseVisible(PlayerHUD hud)
+    {
+        var chat = hud.ChatWindow;
+        if (chat != null)
+        {
+            if (chat.m_chatHistoryCanvasGroup != null) { Activate(chat.m_chatHistoryCanvasGroup.gameObject); Force(chat.m_chatHistoryCanvasGroup); }
+            Force(chat.m_historyBackgroundCanvasGroup, chat.m_historyBackgroundOpacity);
+        }
+        foreach (var g in _extraGroups) Force(g);
+        foreach (var g in _hiddenGroups) Force(g, 0f);
+        FitChatColumns();
+    }
+
     /// <summary>Note the original state of everything ForceVisible touches, then place the samples.</summary>
     public static void Begin(PlayerHUD hud)
     {
@@ -179,7 +207,7 @@ internal static class HudSamples
     /// <summary>Sample chat lines inside a chat viewport, styled like the game's rows: a column anchored to the bottom,
     /// laid out by a VerticalLayoutGroup, the lines wrapping at the window's width; only the newest lines that fit are
     /// shown (FitChatColumns). Also used for the main-menu copy of the HUD.</summary>
-    public static GameObject? ChatLinesInto(Transform viewport, TMP_Text style)
+    public static GameObject? ChatLinesInto(Transform viewport, TMP_Text style, string[]? lines = null)
     {
         var holder = new GameObject("DUT_ChatSamples");
         var hrt = holder.AddComponent<RectTransform>();
@@ -198,7 +226,7 @@ internal static class HudSamples
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         var col = new ChatColumn { Viewport = viewport.TryCast<RectTransform>()!, Holder = hrt, Spacing = column.spacing };
         for (int round = 0; round < 3; round++) // enough for a tall window
-            foreach (var text in ChatLines)
+            foreach (var text in lines ?? ChatLines)
             {
                 int colon = text.IndexOf(": ");
                 // A copy of the game's own text object: a TextMeshProUGUI made from scratch with the same font, material
@@ -227,7 +255,7 @@ internal static class HudSamples
         return holder;
     }
 
-    private static void Chat(PlayerHUD hud)
+    private static void Chat(PlayerHUD hud, string[]? lines = null)
     {
         var c = hud.ChatWindow;
         var rows = c != null ? c.m_messageQueue : null;
@@ -239,7 +267,7 @@ internal static class HudSamples
         var parent = c!.m_messageParent.GetComponent<CanvasGroup>() ?? c.m_messageParent.gameObject.AddComponent<CanvasGroup>();
         Force(parent, 0f);
         _hiddenGroups.Add(parent);
-        var holder = ChatLinesInto(viewport, rows[0].m_text);
+        var holder = ChatLinesInto(viewport, rows[0].m_text, lines);
         if (holder != null) _spawned.Add(holder);
         _chatFaked = true;
     }
@@ -319,7 +347,7 @@ internal static class HudSamples
     }
 
     /// <summary>Bounties / challenges: the game's own hidden row templates with sample text (copies of them never drew).</summary>
-    private static void Activities(PlayerHUD hud)
+    private static void Activities(PlayerHUD hud, bool fakeRows = true)
     {
         var a = hud.ActivitiesHUD;
         if (a == null) return;
@@ -337,7 +365,7 @@ internal static class HudSamples
             if (cg != null) { Force(cg); _extraGroups.Add(cg); }
             bool anyActive = false;
             for (int i = 0; i < container.childCount; i++) if (container.GetChild(i).gameObject.activeSelf) anyActive = true;
-            if (anyActive || container.childCount == 0) continue;
+            if (anyActive || container.childCount == 0 || !fakeRows) continue;
             var go = container.GetChild(0).gameObject;
             Activate(go);
             foreach (var anim in go.GetComponentsInChildren<Animator>(true)) if (anim.enabled) { anim.enabled = false; _paused.Add(anim); }

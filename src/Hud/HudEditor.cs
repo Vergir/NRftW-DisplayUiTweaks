@@ -55,6 +55,7 @@ internal static class HudEditor
     {
         if (On) return;
         SettingsPreview.StopNow();
+        Showcase.Set(false);
         try
         {
             var live = PlayerUIService.Instance?.PlayerHud;

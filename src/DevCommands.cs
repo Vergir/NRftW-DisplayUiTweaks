@@ -11,17 +11,21 @@ namespace DisplayUiTweaks;
 ///   edit | done          enter / leave Edit HUD Layout
 ///   shot NAME            screenshot to UserData/DisplayUiTweaks/NAME.png
 ///   layout               log the bound HUD elements and the saved layout
+///   showcase on|off      screenshot mode (also F9): see Hud/Showcase.cs
 /// </summary>
 internal static class DevCommands
 {
     private static float _next;
+    private static bool _dev;
     private static string Dir => Path.Combine(MelonEnvironment.UserDataDirectory, "DisplayUiTweaks");
 
     public static void Tick()
     {
+        if (_dev && Input.GetKeyDown(KeyCode.F9)) Hud.Showcase.Toggle();
         if (Time.unscaledTime < _next) return;
         _next = Time.unscaledTime + 0.5f;
-        if (!File.Exists(Path.Combine(Dir, ".dev"))) return;
+        _dev = File.Exists(Path.Combine(Dir, ".dev"));
+        if (!_dev) { if (Hud.Showcase.On) Hud.Showcase.Set(false); return; }
         string path = Path.Combine(Dir, "cmd.txt");
         if (!File.Exists(path)) return;
         string[] lines;
@@ -37,6 +41,7 @@ internal static class DevCommands
                 switch (a[0])
                 {
                     case "edit": Hud.HudEditor.Enter(); break;
+                    case "showcase": Hud.Showcase.Set(a.Length < 2 || a[1] != "off"); break;
                     case "done": Hud.HudEditor.Exit(); break;
                     case "shot": ScreenCapture.CaptureScreenshot(Path.Combine(Dir, (a.Length > 1 ? a[1] : "shot") + ".png")); break;
                     case "layout":
