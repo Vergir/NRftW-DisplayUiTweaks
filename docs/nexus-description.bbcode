@@ -10,18 +10,12 @@ With the defaults on a 16:9 monitor nothing looks different until you change a s
 [*][b]Edit HUD Layout:[/b] the HUD appears over the game, with sample content in empty elements (chat, item pickups, a bounty, teammates, a boss bar). Drag to move, mouse wheel to resize, right click to put back. Works from the main menu too.[/*]
 [*][b]Bigger chat:[/b] in the editor, drag the chat window's corner bracket to make it wider and taller; a taller chat shows more lines.[/*]
 [*][b]Hide HUD Outside Combat:[/b] health, equipment, money, durability, clock and location fade out 5 seconds after combat and come back when it starts. Item pickups, hints and chat stay.
-[url=https://staticdelivery.nexusmods.com/mods/6360/images/102/102-1791233764-743523705.gif][img width=480]https://staticdelivery.nexusmods.com/mods/6360/images/102/102-1791233764-743523705.gif[/img][/url][/*]
+[url=https://staticdelivery.nexusmods.com/mods/6360/images/102/102-1791233764-743523705.gif][img width=300]https://staticdelivery.nexusmods.com/mods/6360/images/102/102-1791233764-743523705.gif[/img][/url][/*]
 [*][b]UI size:[/b] one size for the HUD and dialogue, one for the menus.[/*]
 [*][b]Any resolution:[/b] every resolution your display supports can be picked in [i]Options > Display[/i]; the game hides anything narrower than 16:10 or wider than 32:9.[/*]
 [*][b]No black bars:[/b] on square and tall monitors the world fills the whole screen instead of a 16:9 letterbox.[/*]
 [/list]
 Positions are kept relative to the UI area, so a layout survives resolution and size changes.
-
-[size=4][b]What it does not do[/b][/size]
-[list]
-[*]It moves and sizes the HUD elements the game already has; it adds none (no minimap).[/*]
-[*]It does not rearrange menus, the map or dialogue: those only follow UI Area and Menu UI Size.[/*]
-[/list]
 
 [size=4][b]Requirements[/b][/size]
 [list]
@@ -48,7 +42,6 @@ Positions are kept relative to the UI area, so a layout survives resolution and 
 [*][b]After a game update:[/b] if the game renames what the mod hooks, the mod does not load and the MelonLoader log says so; the game then runs as without it. A HUD element the mod no longer finds stays where the game puts it.[/*]
 [*][b]Co-op and saves:[/b] Display only: nothing in the game simulation or your save is changed, so it does not affect co-op.[/*]
 [*][b]Other mods:[/b] no known conflicts; another mod that changes the UI scale or aspect would fight over the same settings.[/*]
-[*][b]Coming from 1.0.0:[/b] a "Custom (Display & UI Tweaks)" UI aspect setup is carried over to UI Area once.[/*]
 [/list]
 
 [size=4][b]Settings[/b][/size]
