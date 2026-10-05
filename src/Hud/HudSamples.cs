@@ -53,13 +53,12 @@ internal static class HudSamples
     private static string[] ShowcaseLines => ChatLines[..^1];
 
     /// <summary>
-    /// Showcase mode for screenshots (DevCommands, dev-only): realistic chat lines in the live chat, kept visible, and the
-    /// bounty / challenge panel kept up while it has real rows. Nothing else is forced or faked; End() undoes it.
+    /// Showcase mode for screenshots (Showcase.cs, dev-only): realistic chat lines in the live chat, kept visible. Nothing
+    /// else is forced or faked; End() undoes it.
     /// </summary>
     public static void BeginShowcase(PlayerHUD hud)
     {
         Chat(hud, ShowcaseLines);
-        Activities(hud, fakeRows: false);
         ShowcaseVisible(hud);
     }
 
@@ -347,7 +346,7 @@ internal static class HudSamples
     }
 
     /// <summary>Bounties / challenges: the game's own hidden row templates with sample text (copies of them never drew).</summary>
-    private static void Activities(PlayerHUD hud, bool fakeRows = true)
+    private static void Activities(PlayerHUD hud)
     {
         var a = hud.ActivitiesHUD;
         if (a == null) return;
@@ -365,7 +364,7 @@ internal static class HudSamples
             if (cg != null) { Force(cg); _extraGroups.Add(cg); }
             bool anyActive = false;
             for (int i = 0; i < container.childCount; i++) if (container.GetChild(i).gameObject.activeSelf) anyActive = true;
-            if (anyActive || container.childCount == 0 || !fakeRows) continue;
+            if (anyActive || container.childCount == 0) continue;
             var go = container.GetChild(0).gameObject;
             Activate(go);
             foreach (var anim in go.GetComponentsInChildren<Animator>(true)) if (anim.enabled) { anim.enabled = false; _paused.Add(anim); }
