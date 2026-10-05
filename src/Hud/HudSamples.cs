@@ -52,8 +52,32 @@ internal static class HudSamples
         "vergir: sample lines for the HUD editor: drag the chat's corner bracket to make the window wider or taller",
     };
 
-    /// <summary>Showcase (dev-only screenshots): the same chatter without the editor's own line.</summary>
-    private static string[] ShowcaseLines => ChatLines[..^1];
+    /// <summary>Showcase (dev-only screenshots): longer chatter, shown once, so even a tall chat window has no repeats
+    /// and no editor line.</summary>
+    private static readonly string[] ShowcaseLines =
+    {
+        "Ana joined the game",
+        "Ana: anyone up for the crucible?",
+        "vergir: sure, give me a minute, I still have to repair my gear and sell everything I picked up in the sewers",
+        "Bram joined the game",
+        "Bram: count me in, but I am still level 18, so somebody else has to take the hits from the big ones",
+        "Ana: meet at the well in Sacrament",
+        "vergir: on my way",
+        "Bram: does anyone have spare iron ore? I need two more for the upgrade",
+        "Ana: I can bring some",
+        "vergir died",
+        "Ana: that boss hits hard",
+        "vergir: the second phase gets me every time",
+        "Bram: roll through the slam, not away from it",
+        "Bram: did anyone else notice that the bounty board in Sacrament refreshed while we were down there?",
+        "Ana: the weekly one looks worth it",
+        "Bram died",
+        "Bram: ok, that one was my fault",
+        "Ana: let's cook something before the next run",
+        "vergir: I have firebrand berries if anyone needs them",
+        "Ana: perfect",
+        "Bram: back in five",
+    };
 
     /// <summary>
     /// Showcase mode for screenshots (Showcase.cs, dev-only): realistic chat lines in the live chat, kept visible. Nothing
@@ -294,7 +318,7 @@ internal static class HudSamples
     /// <summary>Sample chat lines inside a chat viewport, styled like the game's rows: a column anchored to the bottom,
     /// laid out by a VerticalLayoutGroup, the lines wrapping at the window's width; only the newest lines that fit are
     /// shown (FitChatColumns). Also used for the main-menu copy of the HUD.</summary>
-    public static GameObject? ChatLinesInto(Transform viewport, TMP_Text style, string[]? lines = null)
+    public static GameObject? ChatLinesInto(Transform viewport, TMP_Text style, string[]? lines = null, int rounds = 3)
     {
         var holder = new GameObject("DUT_ChatSamples");
         var hrt = holder.AddComponent<RectTransform>();
@@ -312,7 +336,7 @@ internal static class HudSamples
         var fitter = holder.AddComponent<ContentSizeFitter>();
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         var col = new ChatColumn { Viewport = viewport.TryCast<RectTransform>()!, Holder = hrt, Spacing = column.spacing };
-        for (int round = 0; round < 3; round++) // enough for a tall window
+        for (int round = 0; round < rounds; round++) // 3 rounds of the editor's lines: enough for a tall window
             foreach (var text in lines ?? ChatLines)
             {
                 int colon = text.IndexOf(": ");
@@ -354,7 +378,7 @@ internal static class HudSamples
         var parent = c!.m_messageParent.GetComponent<CanvasGroup>() ?? c.m_messageParent.gameObject.AddComponent<CanvasGroup>();
         Force(parent, 0f);
         _hiddenGroups.Add(parent);
-        var holder = ChatLinesInto(viewport, rows[0].m_text, lines);
+        var holder = ChatLinesInto(viewport, rows[0].m_text, lines, lines != null ? 1 : 3);
         if (holder != null) _spawned.Add(holder);
         _chatFaked = true;
     }
