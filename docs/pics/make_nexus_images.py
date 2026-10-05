@@ -163,11 +163,24 @@ def save(img, name):
 # Main image: what each numbered caption points at, in raw frame pixels of the showcase shot.
 UI_AREA = (585, 4, 2293, 956)  # UI Area 1.78 on 3:1
 FEATURES = [
-    ("HUD where you look", None),                     # 1 = the UI area outline itself
-    ("Pickups & bounties come along", [(640, 425, 1015, 615), (2060, 270, 2285, 318)]),
-    ("Bigger chat", [(1812, 548, 2296, 950)]),
+    ("Choose your UI area", None),                    # 1 = the UI area outline itself
+    ("Fix pickups & bounties on ultrawide", [(640, 425, 1015, 615), (2060, 270, 2285, 318)]),
+    ("Enlarge the chat", [(1812, 548, 2296, 950)]),
     ("Move HUD elements", [(1110, 806, 1665, 940)]),
 ]
+BONUS = "Bonus: hide the HUD outside combat"
+
+
+def dashed_rect(img, r, color, width=3, dash=18, gap=12):
+    """A thin dashed outline: reads as a marked area, not as a frame around the picture."""
+    d = ImageDraw.Draw(img, "RGBA")
+    l, t, rr, b = r
+    for x in range(l, rr, dash + gap):
+        d.line((x, t, min(x + dash, rr), t), fill=color, width=width)
+        d.line((x, b, min(x + dash, rr), b), fill=color, width=width)
+    for y in range(t, b, dash + gap):
+        d.line((l, y, l, min(y + dash, b)), fill=color, width=width)
+        d.line((rr, y, rr, min(y + dash, b)), fill=color, width=width)
 
 
 def badge(img, n, xy, r=30):
@@ -189,7 +202,12 @@ def main_image():
     x0, y0 = 40, 178
     panel = ImageEnhance.Brightness(shot("showcase").resize((pw, ph), Image.LANCZOS)).enhance(1.22)
     l, t, r, b = (round(v * k) for v in UI_AREA)
-    panel = ui_area(panel, (l, t, r, b), ph / 540, dim=0.6, text=None)
+    # The UI area: the outside only slightly dimmed and a thin dashed line, so the panel still reads as the whole screen.
+    dark = ImageEnhance.Brightness(panel).enhance(0.72)
+    mask = Image.new("L", panel.size, 0)
+    ImageDraw.Draw(mask).rectangle((l, t, r, b), fill=255)
+    panel = Image.composite(panel, dark, mask).convert("RGBA")
+    dashed_rect(panel, (l, t + 2, r, b - 3), GOLD + (230,))
     for i, (_, boxes) in enumerate(FEATURES, 1):
         for bx in boxes or []:
             bb = tuple(round(v * k) for v in bx)
@@ -197,12 +215,14 @@ def main_image():
             badge(panel, i, (bb[0] - 30, (bb[1] + bb[3]) // 2))  # on the box's left edge, clear of the text
     badge(panel, 1, ((l + r) // 2, t + 34))
     shadowed_paste(img, panel, (x0, y0))
-    cy = y0 + ph + 70
+    cy = y0 + ph + 56
     for i, (text, _) in enumerate(FEATURES, 1):
-        cx = 120 + ((i - 1) % 2) * 900
-        y = cy + ((i - 1) // 2) * 100
-        badge(img, i, (cx, y), 34)
-        label(img, text, (cx + 56, y), 52, anchor="lm")
+        cx = 90 + ((i - 1) % 2) * 900
+        y = cy + ((i - 1) // 2) * 84
+        badge(img, i, (cx, y), 30)
+        label(img, text, (cx + 50, y), 46, anchor="lm")
+    d = ImageDraw.Draw(img)
+    d.text((W // 2, cy + 2 * 84 + 8), BONUS, font=font(44), fill=GOLD, anchor="mm", stroke_width=3, stroke_fill=(15, 15, 15))
     save(img, "01_main.jpg")
     return img
 
