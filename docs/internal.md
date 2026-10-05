@@ -321,6 +321,7 @@ game), `chatsize W H` (chat size factors), `options` / `options close` (open / c
 Showcase (`showcase on|off` or F9, dev only; `Hud/Showcase.cs`) is a screenshot mode for the Nexus images: realistic
 chat lines (the editor's samples without its own line) in the live chat, kept visible; the item pickups on screen stay
 (a prefix skips `PlayerNewItemsView.OnUpdate`, which runs their fade-in / hold / fade-out); the bounty / challenge panel
-shows every tracked activity (`PlayerActivitiesHUD.ShowAllActivities`) and a prefix skips `HideActivitiesLog`. A first
-version paused the panel's Animator / CanvasController instead: a panel hidden at that moment never came back, even on
-progress. Undone through `HudSamples.End`; the editor turns it off.
+is frozen as it is on screen (wait for it to show, then turn the showcase on): `PlayerActivitiesHUD.Update` and
+`HideActivitiesLog` skipped, its Animators / CanvasControllers paused, every CanvasGroup showing held at full alpha.
+Pausing only the animators of a panel that was hidden at that moment kept it hidden even on progress; skipping only
+`HideActivitiesLog` (with `ShowAllActivities`) still let it hide a second later. Undone through `HudSamples.End`; the editor turns it off.

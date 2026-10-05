@@ -6,8 +6,8 @@ namespace DisplayUiTweaks.Hud;
 /// <summary>
 /// Development only (UserData/DisplayUiTweaks/.dev): a screenshot mode for the Nexus images. F9 or the "showcase on|off"
 /// command. While on: realistic chat lines in the chat window (kept visible), the item pickups on screen stay there
-/// (their timers are paused), the bounty / challenge panel shows every tracked activity (the game's own ShowAllActivities)
-/// and does not hide again. Gameplay is untouched.
+/// (their timers are paused), the bounty / challenge panel is frozen as it is on screen (wait for it to show, then press
+/// F9). Gameplay is untouched.
 /// </summary>
 internal static class Showcase
 {
@@ -25,7 +25,6 @@ internal static class Showcase
             if (HudEditor.On) { DisplayUiTweaksMod.Log.Msg("Showcase: close the editor first"); return; }
             HudSamples.BeginShowcase(hud);
             On = true;
-            if (hud.ActivitiesHUD != null) hud.ActivitiesHUD.ShowAllActivities();
         }
         else
         {
@@ -46,6 +45,12 @@ internal static class Showcase
     /// <summary>The bounty / challenge panel hides itself a few seconds after it was shown: not while the showcase is on.</summary>
     [HarmonyPatch(typeof(PlayerActivitiesHUD), nameof(PlayerActivitiesHUD.HideActivitiesLog))]
     private static class KeepActivitiesPatch
+    {
+        private static bool Prefix() => !On;
+    }
+
+    [HarmonyPatch(typeof(PlayerActivitiesHUD), nameof(PlayerActivitiesHUD.Update))]
+    private static class FreezeActivitiesPatch
     {
         private static bool Prefix() => !On;
     }

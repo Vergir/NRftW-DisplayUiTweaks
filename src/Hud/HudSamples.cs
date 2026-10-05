@@ -59,7 +59,32 @@ internal static class HudSamples
     public static void BeginShowcase(PlayerHUD hud)
     {
         Chat(hud, ShowcaseLines);
+        LockActivities(hud);
         ShowcaseVisible(hud);
+    }
+
+    /// <summary>
+    /// The bounty / challenge panel as it is on screen now, frozen: its animators and CanvasControllers paused and every
+    /// CanvasGroup that is showing (in the panel and up to the HUD) held at full alpha. PlayerActivitiesHUD.Update is
+    /// skipped meanwhile (Showcase.cs).
+    /// </summary>
+    private static void LockActivities(PlayerHUD hud)
+    {
+        var a = hud.ActivitiesHUD;
+        if (a == null) return;
+        foreach (var b in a.GetComponentsInChildren<Behaviour>(true))
+        {
+            if (b == null || !b.enabled) continue;
+            string n = b.GetIl2CppType().Name;
+            if (n == "Animator" || n == "CanvasController") { b.enabled = false; _paused.Add(b); }
+        }
+        foreach (var g in a.GetComponentsInChildren<CanvasGroup>(true))
+            if (g != null && g.gameObject.activeInHierarchy && g.alpha > 0.01f) { Force(g); _extraGroups.Add(g); }
+        for (var t = a.transform; t != null && t != hud.transform; t = t.parent)
+        {
+            var g = t.GetComponent<CanvasGroup>();
+            if (g != null && g.alpha > 0.01f && !_extraGroups.Contains(g)) { Force(g); _extraGroups.Add(g); }
+        }
     }
 
     /// <summary>Every frame while the showcase is on, after the game's own fades.</summary>
