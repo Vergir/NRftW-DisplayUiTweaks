@@ -5,8 +5,8 @@ namespace DisplayUiTweaks.Hud;
 
 /// <summary>
 /// Development only (UserData/DisplayUiTweaks/.dev): a screenshot mode for the Nexus images. F9 or the "showcase on|off"
-/// command. While on: realistic chat lines in the chat window (kept visible), new item pickups still come in but none fades
-/// out, the bounty / challenge panel is frozen as it is on screen (wait for it to show, then press
+/// command. While on: realistic chat lines in the chat window (kept visible), every item pickup gets a static copy that stays
+/// (HudSamples.KeepPickups), the bounty / challenge panel is frozen as it is on screen (wait for it to show, then press
 /// F9). Gameplay is untouched.
 /// </summary>
 internal static class Showcase
@@ -33,20 +33,6 @@ internal static class Showcase
             if (hud != null && hud.ActivitiesHUD != null) hud.ActivitiesHUD.HideActivitiesLog();
         }
         DisplayUiTweaksMod.Log.Msg("Showcase " + (On ? "on" : "off"));
-    }
-
-    /// <summary>Pickups keep coming in while the showcase is on, but none fades out (pausing the feed's OnUpdate kept new
-    /// pickups from showing at all).</summary>
-    [HarmonyPatch(typeof(PlayerNewItemView), nameof(PlayerNewItemView.StartFadeOut))]
-    private static class KeepPickupPatch
-    {
-        private static bool Prefix() => !On;
-    }
-
-    [HarmonyPatch(typeof(PlayerNewItemsView), nameof(PlayerNewItemsView.FadeOutAllItemViews))]
-    private static class KeepAllPickupsPatch
-    {
-        private static bool Prefix() => !On;
     }
 
     /// <summary>The bounty / challenge panel hides itself a few seconds after it was shown: not while the showcase is on.</summary>

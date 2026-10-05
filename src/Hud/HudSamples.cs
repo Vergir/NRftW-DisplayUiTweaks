@@ -31,6 +31,9 @@ internal static class HudSamples
     private static readonly List<(Slider s, float value)> _sliders = new();
     private static readonly List<(TMP_Text t, string text)> _texts = new();
     private static bool _recording, _chatFaked;
+    // Showcase pickups: when each real pickup was first seen, and the originals shrunk away behind their static copies.
+    private static readonly Dictionary<System.IntPtr, float> _pickupSeen = new();
+    private static readonly List<(Transform t, Vector3 scale, LayoutElement le, bool added, bool ignore)> _shrunk = new();
 
     /// <summary>Oldest first. Some are long enough to wrap in the game's default chat width, so a wider chat shows the
     /// difference.</summary>
@@ -99,6 +102,65 @@ internal static class HudSamples
         foreach (var g in _extraGroups) Force(g);
         foreach (var g in _hiddenGroups) Force(g, 0f);
         FitChatColumns();
+        KeepPickups(hud);
+    }
+
+    /// <summary>
+    /// Showcase: every real item pickup gets a static copy in its place (its animator and script off, fully shown), and
+    /// the original is shrunk out of the layout, so the pickup stays while the game removes the original on its own
+    /// schedule. Blocking the views' fade-out did not keep them.
+    /// </summary>
+    private static void KeepPickups(PlayerHUD hud)
+    {
+        var v = hud.NewItemsView;
+        var group = v != null && v.ItemsLayoutGroup != null ? v.ItemsLayoutGroup.transform : null;
+        if (group == null) return;
+        // An original the game took back (pooled, inactive) gets its size back, in case it is reused for the next pickup.
+        for (int i = _shrunk.Count - 1; i >= 0; i--)
+            if (_shrunk[i].t == null || !_shrunk[i].t.gameObject.activeInHierarchy) { Unshrink(_shrunk[i]); _shrunk.RemoveAt(i); }
+        float now = Time.unscaledTime;
+        for (int i = 0; i < group.childCount; i++)
+        {
+            var c = group.GetChild(i);
+            if (!c.gameObject.activeSelf || c.name.StartsWith("DUT_") || _shrunk.Exists(s => s.t == c)) continue;
+            if (!_pickupSeen.TryGetValue(c.Pointer, out var seen)) { _pickupSeen[c.Pointer] = now; continue; }
+            if (now - seen < 0.15f) continue; // its name and icon are set by then
+            _pickupSeen.Remove(c.Pointer);
+            var copy = Object.Instantiate(c.gameObject);
+            copy.transform.parent = group;
+            copy.transform.localScale = Vector3.one;
+            copy.transform.localPosition = Vector3.zero;
+            copy.transform.SetSiblingIndex(c.GetSiblingIndex());
+            copy.name = "DUT_Sample";
+            var view = copy.GetComponent<PlayerNewItemView>();
+            if (view != null) { if (view.ItemAnimator != null) view.ItemAnimator.enabled = false; view.enabled = false; }
+            foreach (var anim in copy.GetComponentsInChildren<Animator>(true)) anim.enabled = false;
+            for (int k = 0; k < copy.transform.childCount; k++)
+            {
+                var crt = copy.transform.GetChild(k).TryCast<RectTransform>();
+                if (crt != null) crt.anchoredPosition = new Vector2(0f, crt.anchoredPosition.y);
+            }
+            foreach (var cg in copy.GetComponentsInChildren<CanvasGroup>(true)) cg.alpha = 1f;
+            _spawned.Add(copy);
+            var le = c.GetComponent<LayoutElement>();
+            bool added = le == null;
+            if (added) le = c.gameObject.AddComponent<LayoutElement>();
+            _shrunk.Add((c, c.localScale, le!, added, le!.ignoreLayout));
+            le!.ignoreLayout = true;
+            c.localScale = Vector3.zero;
+        }
+        // The feed fades its own panel out once the game thinks it is empty: keep it up while it shows our copies.
+        if (_shrunk.Count > 0 || _spawned.Exists(go => go != null && go.transform.parent == group))
+            for (var t = group; t != null && t != hud.transform; t = t.parent) Force(t.GetComponent<CanvasGroup>());
+        Rebuild(group);
+    }
+
+    private static void Unshrink((Transform t, Vector3 scale, LayoutElement le, bool added, bool ignore) s)
+    {
+        if (s.t == null) return;
+        s.t.localScale = s.scale;
+        if (s.le == null) return;
+        if (s.added) Object.Destroy(s.le); else s.le.ignoreLayout = s.ignore;
     }
 
     /// <summary>Note the original state of everything ForceVisible touches, then place the samples.</summary>
@@ -159,6 +221,9 @@ internal static class HudSamples
 
     public static void End(PlayerHUD? hud)
     {
+        foreach (var s in _shrunk) Unshrink(s);
+        _shrunk.Clear();
+        _pickupSeen.Clear();
         var chat = hud != null ? hud.ChatWindow : null;
         if (chat != null && _chatFaked) chat.RefreshData(-1, true);
         _chatFaked = false;
