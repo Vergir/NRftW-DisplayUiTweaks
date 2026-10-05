@@ -7,16 +7,17 @@ using UnityEngine;
 
 namespace DisplayUiTweaks;
 
-/// <summary>Our rows at the end of Options > Display (Mod Settings Tab moves them to its Mods tab); see docs/internal.md,
+/// <summary>Our rows at the end of Options > Display under a "Display &amp; UI Tweaks" heading (Mod Settings Tab moves them
+/// to its Mods tab); see docs/internal.md,
 /// "Settings rows". Order: UI Area, HUD size, menu size, Edit HUD Layout, Reset HUD Layout, Hide HUD Outside Combat.</summary>
 internal static class SettingsRows
 {
     public const string Prefix = "DUT_";
     public const string UiAreaRowId = "DUT_UiArea";
-    private const string SpacerId = "DUT_Spacer", AreaId = "DUT_UiArea", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale",
+    private const string SpacerId = "DUT_Spacer", HeadingId = "DUT_Heading", AreaId = "DUT_UiArea", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale",
         EditId = "DUT_EditHud", ResetId = "DUT_ResetHud", HideId = "DUT_HideHud";
     // 1.0.0 rows (Custom UI Aspect Ratio, Bounty Board & Map Fix): only freed from the registry.
-    private static readonly string[] AllIds = { SpacerId, AreaId, HudId, MenuId, EditId, ResetId, HideId, "DUT_BoxAspect", "DUT_BoxUiToolkit" };
+    private static readonly string[] AllIds = { SpacerId, HeadingId, AreaId, HudId, MenuId, EditId, ResetId, HideId, "DUT_BoxAspect", "DUT_BoxUiToolkit" };
     private static readonly string[] HideNames = { "Off", "On", "On, but show health while hurt" };
 
     private const string AreaDescription =
@@ -84,6 +85,10 @@ internal static class SettingsRows
         RemoveRegistryEntries(controls);
 
         AddSpacer(controls, content);
+        // A heading row as the game uses between its own groups (Controls tab), so the rows read as this mod's.
+        int headingBefore = content.childCount;
+        controls.AddSeparatorItem(PlayerSettingCategory.Display, Msg(HeadingId, "Display & UI Tweaks"));
+        NameNewRow(content, headingBefore, HeadingId);
 
         AddSlider(controls, content, AreaId,
             Msg(AreaId, "UI Area"),

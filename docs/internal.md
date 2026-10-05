@@ -153,7 +153,8 @@ moves them to its Mods tab, so the mod finds its rows anywhere in the screen whe
 * `AddSliderItem` works on a normalized 0..1 value with a fixed increment; the mod maps that to its ranges. Its
   `IPlayerSettingAdapter<float>` argument is only stored by the row, never read, so null is passed.
 * An empty divider row (`AddDividerItem`, the same spacer the game uses between its groups) separates the block from
-  the game's rows.
+  the game's rows, followed by a "Display & UI Tweaks" heading (`AddSeparatorItem`, the `SeparatorSettingsItemGUI` the
+  Controls tab uses for "Keyboard & Mouse").
 * Labels are `LocalizedMessage` ScriptableObjects created at runtime with the same text in every language field.
 * `SettingsScreenControls.m_categoryToContentToItem` is a per-category dictionary keyed by the label's Id. Adding the
   same Id twice throws after the row prefab was instantiated, which leaves an orphan row labelled "Slider".

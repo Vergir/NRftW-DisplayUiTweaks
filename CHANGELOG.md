@@ -17,6 +17,7 @@
 * The Bounty Board & Map Fix row is gone: the fix is always on (config switch `BoxUiToolkitScreens`).
 * Fix: after changing HUD & Dialogue UI Size the chat window (and the item pickups) drew bigger and in the wrong place
   until the next load; nested canvases now follow a scale change at once.
+* The rows sit under a "Display & UI Tweaks" heading.
 * The rows show the current values whenever a settings screen opens (the main menu and the game have separate screens).
 
 ## 1.0.0
