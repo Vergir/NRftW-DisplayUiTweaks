@@ -26,6 +26,7 @@ W, H = 1920, 1080
 # The game frame of each raw shot (left, top, right, bottom). The monitor's FPS overlay sits in the bottom 50 px of
 # full-monitor captures; the 9:8 frames stop above it.
 SHOTS = {
+    "showcase": ("Screenshot 2026-10-05 222141.png", (0, 451, 2878, 1411)),     # 3:1, UI Area 1.78, showcase mode (F9)
     "uw_vanilla": ("Screenshot 2026-10-05 172946.png", (0, 98, 2878, 1058)),     # 3:1, game's default UI
     "uw_mod": ("Screenshot 2026-10-05 172929.png", (0, 98, 2878, 1058)),         # 3:1, UI Area 1.78
     "sq_vanilla": ("Screenshot 2026-10-05 173345.png", (0, 0, 2878, 2505)),      # 9:8 monitor, the game's 16:9 band
@@ -159,24 +160,49 @@ def save(img, name):
 
 # ---- 01 main image / tile ------------------------------------------------------------------------------------------
 
+# Main image: what each numbered caption points at, in raw frame pixels of the showcase shot.
+UI_AREA = (585, 4, 2293, 956)  # UI Area 1.78 on 3:1
+FEATURES = [
+    ("HUD where you look", None),                     # 1 = the UI area outline itself
+    ("Pickups & bounties come along", [(640, 425, 1015, 615), (2060, 270, 2285, 318)]),
+    ("Bigger chat", [(1812, 548, 2296, 950)]),
+    ("Move HUD elements", [(1110, 806, 1665, 940)]),
+]
+
+
+def badge(img, n, xy, r=30):
+    """A numbered gold disc."""
+    d = ImageDraw.Draw(img)
+    x, y = xy
+    d.ellipse((x - r, y - r, x + r, y + r), fill=GOLD, outline=(20, 20, 20), width=3)
+    d.text((x, y + 1), str(n), font=font(round(r * 1.25)), fill=(15, 15, 15), anchor="mm")
+
+
 def main_image():
-    """Main image = listing tile: two features at once. Left, the 9:8 monitor without and with the mod (bars vs the
-    whole screen); right, the HUD editor with its sample content. The name on top."""
-    img = backdrop("sq_mod", dim=0.7)
-    outlined(img, "Display & UI Tweaks", (W // 2, 100), 150)
-    top, bottom, m, gap = 200, H - 34, 34, 22
-    ph = (bottom - top - gap) // 2
-    pw = round(ph * 2878 / 2505)
-    for i, (k, lbl) in enumerate((("sq_vanilla", "Vanilla"), ("sq_mod", "With mod"))):
-        y = top + i * (ph + gap)
-        shadowed_paste(img, sized(k, pw, ph).convert("RGBA"), (m, y))
-        label(img, lbl, (m + 14, y + 14), 44)
-    ex = m + pw + 30
-    ew = W - ex - m
-    eh = round(ew * 9 / 16)
-    ey = top + (bottom - top - eh) // 2
-    shadowed_paste(img, sized("editor_panel", ew, eh).convert("RGBA"), (ex, ey))
-    label(img, "Edit HUD Layout", (ex + 18, ey + eh - 18), 56, anchor="ld")
+    """Main image = listing tile: one ultrawide scene with the mod on (showcase mode: chat lines, pickups and the
+    challenge held on screen), the UI area outlined, four numbered features boxed and captioned below. Title on top."""
+    img = backdrop("showcase", dim=0.65, blur=10)
+    outlined(img, "Display & UI Tweaks", (W // 2, 92), 132)
+    pw = W - 2 * 40
+    k = pw / 2878
+    ph = round(960 * k)
+    x0, y0 = 40, 178
+    panel = ImageEnhance.Brightness(shot("showcase").resize((pw, ph), Image.LANCZOS)).enhance(1.22)
+    l, t, r, b = (round(v * k) for v in UI_AREA)
+    panel = ui_area(panel, (l, t, r, b), ph / 540, dim=0.6, text=None)
+    for i, (_, boxes) in enumerate(FEATURES, 1):
+        for bx in boxes or []:
+            bb = tuple(round(v * k) for v in bx)
+            box(panel, bb)
+            badge(panel, i, (bb[0] - 30, (bb[1] + bb[3]) // 2))  # on the box's left edge, clear of the text
+    badge(panel, 1, ((l + r) // 2, t + 34))
+    shadowed_paste(img, panel, (x0, y0))
+    cy = y0 + ph + 70
+    for i, (text, _) in enumerate(FEATURES, 1):
+        cx = 120 + ((i - 1) % 2) * 900
+        y = cy + ((i - 1) // 2) * 100
+        badge(img, i, (cx, y), 34)
+        label(img, text, (cx + 56, y), 52, anchor="lm")
     save(img, "01_main.jpg")
     return img
 
