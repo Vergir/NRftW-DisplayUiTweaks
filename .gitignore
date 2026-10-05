@@ -5,3 +5,5 @@ dist/
 *.user
 docs/pics/*.png
 docs/hotreload-lessons.md
+docs/pics/*.gif
+docs/pics/nexus/_tile_*.png
