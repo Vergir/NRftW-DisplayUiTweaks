@@ -21,6 +21,7 @@ internal static class UiToolkitBoxing
     public static void OnDocumentEnabled(UIDocument doc)
     {
         if (doc == null) return;
+        Classify(doc);
         if (IsActivityDocument(doc)) BoxRoot(doc.rootVisualElement);
         else if (IsMapOverlay(doc)) CapChunkDetails(doc.rootVisualElement);
     }
@@ -43,6 +44,30 @@ internal static class UiToolkitBoxing
             if (p != null && p.Document != null) _activityDocs.Add(p.Document);
         foreach (var m in Resources.FindObjectsOfTypeAll<MapScreen>())
             if (m != null && m.MapUiToolkitOverlay != null) _mapOverlays.Add(m.MapUiToolkitOverlay);
+    }
+
+    /// <summary>
+    /// Learn a screen from its own document, so streaming scene loads need no rescan (each Resources.FindObjectsOfTypeAll
+    /// walks every loaded object: ~90 ms in the open world). The activity and vendor panels sit on their document's
+    /// GameObject; the map overlay is a child of the MapScreen.
+    /// </summary>
+    private static void Classify(UIDocument doc)
+    {
+        if (IsActivityDocument(doc) || IsMapOverlay(doc)) return;
+        if (doc.GetComponent<ActivityScreenPanel>() != null || doc.GetComponent<ActivityVendorScreenPanel>() != null)
+        {
+            _activityDocs.RemoveAll(d => d == null);
+            _activityDocs.Add(doc);
+            DisplayUiTweaksMod.Log.Msg("UI Toolkit screen found: " + doc.name);
+            return;
+        }
+        var map = doc.GetComponentInParent<MapScreen>(true);
+        if (map != null && map.MapUiToolkitOverlay != null && map.MapUiToolkitOverlay.Pointer == doc.Pointer)
+        {
+            _mapOverlays.RemoveAll(d => d == null);
+            _mapOverlays.Add(doc);
+            DisplayUiTweaksMod.Log.Msg("UI Toolkit screen found: " + map.name);
+        }
     }
 
     /// <summary>Remove every inline style we set (unload / hot reload).</summary>

@@ -7,7 +7,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>DisplayUiTweaks</AssemblyName>
     <RootNamespace>DisplayUiTweaks</RootNamespace>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <DebugType>portable</DebugType>

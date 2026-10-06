@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+
+* Fix: hitches of 0.3-0.5 s about a second after every area streamed in while travelling. The mod searched all
+  loaded objects for the bounty board and map screens after each scene load; it now recognises them when they open.
+
 ## 1.1.0
 
 * **UI Area**: one slider (1.00-4.00, default 1.78) for the shape of the area the whole UI is kept in. It replaces the

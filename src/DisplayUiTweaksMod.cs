@@ -3,7 +3,7 @@ using MelonLoader;
 using DisplayUiTweaks;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.1.0", "vergir")]
+[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.1.1", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 // Patches are applied in OnInitializeMelon, only when enabled (MelonLoader would otherwise apply them all by itself).
 [assembly: HarmonyDontPatchAll]
@@ -95,7 +95,9 @@ public class DisplayUiTweaksMod : MelonMod
         {
             string reason = _pendingReason;
             _pendingReason = null;
-            ApplyEverything(reason);
+            // Streaming scene loads bring no UI: the screens are learned as their UIDocuments enable (UIDocumentPatches),
+            // so only re-apply. A rescan here cost ~400 ms several times a minute while travelling.
+            ApplyEverything(reason, rescan: false);
         }
         // A changed setting is applied once it has stopped changing and the mouse button is up (a slider drag resizing
         // the settings screen under the cursor would otherwise feed back into the drag).
@@ -127,13 +129,14 @@ public class DisplayUiTweaksMod : MelonMod
         }
     }
 
-    /// <summary>Re-applies the non-Harmony changes, looking for newly loaded screens first. Safe to repeat.</summary>
-    public static void ApplyEverything(string reason)
+    /// <summary>Re-applies the non-Harmony changes; rescan = look for loaded screens first (slow: init and resolution
+    /// changes only). Safe to repeat.</summary>
+    public static void ApplyEverything(string reason, bool rescan = true)
     {
         if (!reason.StartsWith("scene")) Log.Msg("Applying (" + reason + ")");
         RenderPipelineTweaks.Apply();
-        UiScaling.ApplyPanels(rescan: true);
-        UiToolkitBoxing.ApplyAll(rescan: true);
+        UiScaling.ApplyPanels(rescan);
+        UiToolkitBoxing.ApplyAll(rescan);
     }
 
     /// <summary>Called by the settings rows after a value changed. HUD size follows every frame by itself; menu size,

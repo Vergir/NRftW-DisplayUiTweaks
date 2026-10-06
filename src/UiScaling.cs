@@ -120,6 +120,13 @@ internal static class UiScaling
             DisplayUiTweaksMod.Log.Msg("PanelSettings: " + found + " loaded, " + changed + " fitted to the UI box, " + restored + " restored");
     }
 
+    /// <summary>Remember a panel seen on an enabling UIDocument, so re-applies without a rescan include it.</summary>
+    public static void RegisterPanel(PanelSettings p)
+    {
+        _panels.RemoveAll(x => x == null);
+        if (!_panels.Exists(x => x.Pointer == p.Pointer)) _panels.Add(p);
+    }
+
     /// <summary>Restore every panel we changed.</summary>
     public static void RestorePanels()
     {

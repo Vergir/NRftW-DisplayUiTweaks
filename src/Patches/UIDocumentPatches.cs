@@ -13,7 +13,7 @@ internal static class UIDocumentOnEnablePatch
         try
         {
             var ps = __instance.panelSettings;
-            if (ps != null) UiScaling.ApplyPanel(ps);
+            if (ps != null) { UiScaling.RegisterPanel(ps); UiScaling.ApplyPanel(ps); }
             UiToolkitBoxing.OnDocumentEnabled(__instance);
         }
         catch (System.Exception e) { DisplayUiTweaksMod.Log.Warning("UIDocument.OnEnable postfix: " + e.Message); }
