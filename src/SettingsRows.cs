@@ -1,23 +1,21 @@
 using System;
 using System.Collections.Generic;
-using Il2CppInterop.Runtime;
-using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppMoon.Forsaken;
+using NrftwShared;
 using UnityEngine;
 
 namespace DisplayUiTweaks;
 
 /// <summary>Our rows at the end of Options > Display under a "Display &amp; UI Tweaks" heading (Mod Settings Tab moves them
-/// to its Mods tab); see docs/internal.md,
-/// "Settings rows". Order: UI Area, HUD size, menu size, Edit HUD Layout, Reset HUD Layout, Hide HUD Outside Combat.</summary>
+/// to its Mods tab); see docs/internal.md, "Settings rows". Built with the shared kit (src/Shared/SettingsRowsKit.cs),
+/// which also removes them. Order: UI Area, HUD size, menu size, Edit HUD Layout, Reset HUD Layout, Hide HUD Outside Combat.</summary>
 internal static class SettingsRows
 {
     public const string Prefix = "DUT_";
     public const string UiAreaRowId = "DUT_UiArea";
+    private const PlayerSettingCategory Category = PlayerSettingCategory.Display;
     private const string SpacerId = "DUT_Spacer", HeadingId = "DUT_Heading", AreaId = "DUT_UiArea", HudId = "DUT_HudScale", MenuId = "DUT_MenuScale",
         EditId = "DUT_EditHud", ResetId = "DUT_ResetHud", HideId = "DUT_HideHud";
-    // 1.0.0 rows (Custom UI Aspect Ratio, Bounty Board & Map Fix): only freed from the registry.
-    private static readonly string[] AllIds = { SpacerId, HeadingId, AreaId, HudId, MenuId, EditId, ResetId, HideId, "DUT_BoxAspect", "DUT_BoxUiToolkit" };
     private static readonly string[] HideNames = { "Off", "On", "On, but show health while hurt" };
 
     private const string AreaDescription =
@@ -34,7 +32,11 @@ internal static class SettingsRows
 
     private const float HoldRepeatSeconds = 0.3f;
 
-    private static readonly Dictionary<string, LocalizedMessage> _messages = new Dictionary<string, LocalizedMessage>();
+    // 1.0.0 rows (Custom UI Aspect Ratio, Bounty Board & Map Fix): only freed from the registry.
+    private static readonly SettingsRowsKit Kit = new SettingsRowsKit(Prefix,
+        new[] { SpacerId, HeadingId, AreaId, HudId, MenuId, EditId, ResetId, HideId, "DUT_BoxAspect", "DUT_BoxUiToolkit" },
+        () => DisplayUiTweaksMod.Log, SettingsRowsKit.DisplayTabControls) { Verbose = true };
+
     private static readonly Dictionary<string, Func<float>> _sliderValues = new();
     private static readonly Dictionary<string, Func<int>> _dropdownValues = new();
 
@@ -69,221 +71,62 @@ internal static class SettingsRows
 
     public static void AddTo(DisplaySettingsTab tab)
     {
-        var controls = tab.m_controls;
-        if (controls == null) { DisplayUiTweaksMod.Log.Warning("DisplaySettingsTab.m_controls is null"); return; }
-        var content = DisplayContent(controls);
-        if (content == null) { DisplayUiTweaksMod.Log.Warning("Display tab has no content root yet"); return; }
+        var rows = Kit.Begin(tab.m_controls, Category, HudId);
+        if (rows == null) return;
 
-        // Drop references to destroyed rows (left by an older build).
-        ForgetRows(controls, oursToo: false);
-
-        if (content.Find(HudId) != null)
-        {
-            DisplayUiTweaksMod.Log.Msg("Settings rows already present, skipping");
-            return;
-        }
-        RemoveRegistryEntries(controls);
-
-        AddSpacer(controls, content);
+        rows.Spacer(SpacerId);
         // A heading row as the game uses between its own groups (Controls tab), so the rows read as this mod's.
-        int headingBefore = content.childCount;
-        controls.AddSeparatorItem(PlayerSettingCategory.Display, Msg(HeadingId, "Display & UI Tweaks"));
-        NameNewRow(content, headingBefore, HeadingId);
+        rows.Heading(HeadingId, "Display & UI Tweaks");
 
-        AddSlider(controls, content, AreaId,
-            Msg(AreaId, "UI Area"),
-            Msg(AreaId + "_Desc", AreaDescription),
+        AddSlider(rows, AreaId, "UI Area", AreaDescription,
             Prefs.UiAreaMin, Prefs.UiAreaMax, Prefs.UiAreaStep, () => Prefs.UiAreaValue,
             v => v.ToString("0.00"),
             v => { Prefs.UiArea.Value = Mathf.Round(v * 100f) / 100f; DisplayUiTweaksMod.OnLayoutPrefChanged(); Hud.SettingsPreview.Poke(); });
 
-        AddSlider(controls, content, HudId,
-            Msg(HudId, "HUD & Dialogue UI Size"),
-            Msg(HudId + "_Desc", "Scale of the in-game HUD, overlays and dialogue."),
+        AddSlider(rows, HudId, "HUD & Dialogue UI Size", "Scale of the in-game HUD, overlays and dialogue.",
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, () => Prefs.HudScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
             v => { Prefs.HudScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); Hud.SettingsPreview.Poke(); });
 
-        AddSlider(controls, content, MenuId,
-            Msg(MenuId, "Menu UI Size"),
-            Msg(MenuId + "_Desc", "Scale of menus (inventory, stats, map, settings)."),
+        AddSlider(rows, MenuId, "Menu UI Size", "Scale of menus (inventory, stats, map, settings).",
             Prefs.HudScaleMin, Prefs.HudScaleMax, Prefs.HudScaleStep, () => Prefs.MenuScalePercent.Value,
             v => Mathf.RoundToInt(v) + "%",
             v => { Prefs.MenuScalePercent.Value = Mathf.Round(v); DisplayUiTweaksMod.OnLayoutPrefChanged(); });
 
-        AddButton(controls, content, EditId,
-            Msg(EditId, "Edit HUD Layout"),
-            Msg(EditId + "_Desc", "Move and resize HUD elements with the mouse, on top of the game, with sample content in empty elements."),
+        rows.Button(EditId, "Edit HUD Layout",
+            "Move and resize HUD elements with the mouse, on top of the game, with sample content in empty elements.",
             () => Hud.HudEditor.Enter());
 
-        AddButton(controls, content, ResetId,
-            Msg(ResetId, "Reset HUD Layout"),
-            Msg(ResetId + "_Desc", "Put every HUD element back where the game has it, at its normal size."),
+        rows.Button(ResetId, "Reset HUD Layout",
+            "Put every HUD element back where the game has it, at its normal size.",
             () => Hud.HudLayout.ResetAll());
 
-        AddDropdown(controls, content, HideId,
-            Msg(HideId, "Hide HUD Outside Combat"),
-            Msg(HideId + "_Desc", "Fades out health, equipment, money, durability, clock and location a few seconds after combat ends; " +
-                                  "they come back when combat starts. The last option keeps the health bar while you are not at full health. " +
-                                  "Item pickups, hints and chat stay."),
-            HideNames,
-            () => Mathf.Clamp(Prefs.HideHudOutsideCombat.Value, 0, HideNames.Length - 1),
+        Func<int> hideCurrent = () => Mathf.Clamp(Prefs.HideHudOutsideCombat.Value, 0, HideNames.Length - 1);
+        rows.Dropdown(HideId, "Hide HUD Outside Combat",
+            "Fades out health, equipment, money, durability, clock and location a few seconds after combat ends; " +
+            "they come back when combat starts. The last option keeps the health bar while you are not at full health. " +
+            "Item pickups, hints and chat stay.",
+            HideNames, hideCurrent(),
             i => { Prefs.HideHudOutsideCombat.Value = i; Prefs.Save(); });
+        _dropdownValues[HideId] = hideCurrent;
 
         DisplayUiTweaksMod.Log.Msg("Added Display & UI Tweaks rows to Options > Display");
     }
 
     /// <summary>Hot reload / unload: destroy our rows on every live settings screen and free their registry keys.</summary>
-    public static void RemoveAll()
-    {
-        int removed = 0;
-        foreach (var s in Resources.FindObjectsOfTypeAll<SettingsScreen>())
-        {
-            var controls = s != null && s.m_displayTab != null ? s.m_displayTab.m_controls : null;
-            if (controls == null) continue;
-            // Unregister before destroying, or Back throws on the destroyed dropdown.
-            ForgetRows(controls, oursToo: true);
-            // Anywhere in the screen: Mod Settings Tab moves the rows to its own tab.
-            foreach (var row in s!.GetComponentsInChildren<SettingsItemGUIBase>(true))
-                if (row != null && row.gameObject.name.StartsWith(Prefix)) { UnityEngine.Object.DestroyImmediate(row.gameObject); removed++; }
-            RemoveRegistryEntries(controls);
-        }
-        if (removed > 0) DisplayUiTweaksMod.Log.Msg("Removed " + removed + " settings rows");
-    }
+    public static void RemoveAll() => Kit.RemoveAll();
 
-    /// <summary>Drop references the controls hold to destroyed rows (and, with oursToo, to our live rows):
-    /// the dropdown instance lists and the cached selected / modal-previous element.</summary>
-    private static void ForgetRows(SettingsScreenControls controls, bool oursToo)
-    {
-        int dropped = 0;
-        var actual = controls.m_actualDropDownInstances;
-        if (actual != null)
-            for (int i = actual.Count - 1; i >= 0; i--)
-            {
-                var d = actual[i];
-                if (d == null || (oursToo && d.gameObject.name.StartsWith(Prefix))) { actual.RemoveAt(i); dropped++; }
-            }
-        var bound = controls.m_boundDropDownInstances;
-        if (bound != null)
-            for (int i = bound.Count - 1; i >= 0; i--)
-                if (bound[i] == null) { bound.RemoveAt(i); dropped++; }
-        if (IsDeadOrOurs(controls.m_cachedSelectedItemGUI, oursToo)) { controls.m_cachedSelectedItemGUI = null; dropped++; }
-        if (IsDeadOrOurs(controls.m_modalPreviousElement, oursToo)) { controls.m_modalPreviousElement = null; dropped++; }
-        if (dropped > 0) DisplayUiTweaksMod.Log.Msg("Dropped " + dropped + " settings-screen reference(s) to " + (oursToo ? "our rows" : "destroyed rows"));
-    }
-
-    private static bool IsDeadOrOurs(SettingsItemGUIBase? item, bool oursToo)
-    {
-        if (item is null) return false;                       // no reference at all
-        if (item == null) return true;                        // Unity-destroyed object
-        return oursToo && item.gameObject.name.StartsWith(Prefix);
-    }
-
-    private static RectTransform? DisplayContent(SettingsScreenControls controls)
-    {
-        var roots = controls.m_nameToContentRoot;
-        if (roots == null || !roots.ContainsKey(PlayerSettingCategory.Display)) return null;
-        return roots[PlayerSettingCategory.Display];
-    }
-
-    private static void RemoveRegistryEntries(SettingsScreenControls controls)
-    {
-        if (controls.m_categoryToContentToItem == null || !controls.m_categoryToContentToItem.ContainsKey(PlayerSettingCategory.Display)) return;
-        var items = controls.m_categoryToContentToItem[PlayerSettingCategory.Display];
-        if (items == null) return;
-        foreach (var id in AllIds) items.Remove(id);
-    }
-
-    private static void AddSlider(SettingsScreenControls controls, RectTransform content, string id, LocalizedMessage name, LocalizedMessage desc,
+    /// <summary>A slider row (no snapping: the change handlers round), remembered for RefreshValues; the UI Area and HUD
+    /// size rows also go to PreviewRows.</summary>
+    private static void AddSlider(SettingsRowsKit.Builder rows, string id, string name, string desc,
         float min, float max, float step, Func<float> current, Func<float, string> display, Action<float> onChanged)
     {
-        int steps = Mathf.Max(1, Mathf.RoundToInt((max - min) / step));
-        float increment = 1f / steps;
-        float ToValue(float normalized) => min + Mathf.Clamp01(normalized) * (max - min);
-        float ToNormalized(float value) => Mathf.Clamp01((value - min) / (max - min));
-
-        Func<float, string> displayNormalized = n => display(ToValue(n));
-        Action<float> changedNormalized = n => onChanged(ToValue(n));
-
-        int before = content.childCount;
-        controls.AddSliderItem(
-            PlayerSettingCategory.Display,
-            null!,                              // IPlayerSettingAdapter<float>: stored, never read (see class remarks)
-            name,
-            ToNormalized(current()),
-            changedNormalized,
-            increment,
-            displayNormalized,
-            desc,
-            10,                                 // maxScrollMultiplier: a held key speeds up to 10 steps per repeat
-            false,                              // invokeCallbackOnStart
-            false,                              // canSelectForFader
-            false);                             // showOffOnZero
-        NameNewRow(content, before, id);
-        _sliderValues[id] = () => ToNormalized(current());
-        if ((id == AreaId || id == HudId) && content.childCount > before)
+        var row = rows.Slider(id, name, desc, min, max, step, current(), display, onChanged, HoldRepeatSeconds, snapToStep: false);
+        _sliderValues[id] = () => SettingsRowsKit.Normalize(current(), min, max);
+        if ((id == AreaId || id == HudId) && row != null)
         {
-            var row = content.GetChild(content.childCount - 1).GetComponent<SettingsItemGUIBase>();
-            if (row != null) { PreviewRows.RemoveAll(r => r == null); PreviewRows.Add(row); }
+            var item = row.GetComponent<SettingsItemGUIBase>();
+            if (item != null) { PreviewRows.RemoveAll(r => r == null); PreviewRows.Add(item); }
         }
-        // Held-key repeat interval: long enough that a normal key tap is exactly one step.
-        if (content.childCount > before)
-        {
-            var slider = content.GetChild(content.childCount - 1).GetComponent<SliderSettingsItemGUI>();
-            if (slider != null && slider.m_scrollHoldThreshold < HoldRepeatSeconds) slider.m_scrollHoldThreshold = HoldRepeatSeconds;
-        }
-    }
-
-    /// <summary>A button row, like the game's Reset Tutorials.</summary>
-    private static void AddButton(SettingsScreenControls controls, RectTransform content, string id, LocalizedMessage name, LocalizedMessage desc, Action onClick)
-    {
-        int before = content.childCount;
-        controls.AddButtonItem(id, PlayerSettingCategory.Display, name, onClick, desc);
-        NameNewRow(content, before, id);
-    }
-
-    private static void AddDropdown(SettingsScreenControls controls, RectTransform content, string id, LocalizedMessage name, LocalizedMessage desc,
-        string[] options, Func<int> current, Action<int> onChanged)
-    {
-        var arr = new Il2CppStringArray(options.Length);
-        for (int i = 0; i < options.Length; i++) arr[i] = options[i];
-        int before = content.childCount;
-        controls.AddActualDropDownItem(PlayerSettingCategory.Display, name, arr, current(), onChanged, desc, true, false);
-        NameNewRow(content, before, id);
-        _dropdownValues[id] = current;
-    }
-
-    /// <summary>The same empty divider row the game uses between its own groups.</summary>
-    private static void AddSpacer(SettingsScreenControls controls, RectTransform content)
-    {
-        int before = content.childCount;
-        controls.AddDividerItem(PlayerSettingCategory.Display, SpacerId);
-        NameNewRow(content, before, SpacerId);
-        if (content.childCount > before)
-        {
-            var row = content.GetChild(content.childCount - 1).GetComponent<SettingsItemGUIBase>();
-            if (row != null && row.SettingLabel != null) row.SettingLabel.text = "";
-        }
-    }
-
-    private static void NameNewRow(RectTransform content, int before, string id)
-    {
-        if (content.childCount > before) content.GetChild(content.childCount - 1).name = id;
-    }
-
-    /// <summary>A LocalizedMessage is a ScriptableObject holding one string per language; fill every language with the same text.</summary>
-    private static LocalizedMessage Msg(string id, string text)
-    {
-        if (_messages.TryGetValue(id, out var cached) && cached != null) return cached;
-        var so = ScriptableObject.CreateInstance(Il2CppType.Of<LocalizedMessage>());
-        var m = so.Cast<LocalizedMessage>();
-        m.name = id;
-        m.Id = id;
-        m.English = text; m.French = text; m.Italian = text; m.German = text; m.Spanish = text;
-        m.BrazilianPortuguese = text; m.TraditionalChinese = text; m.SimplifiedChinese = text;
-        m.Korean = text; m.Russian = text; m.Japanese = text; m.Polish = text;
-        m.hideFlags = HideFlags.HideAndDontSave;
-        _messages[id] = m;
-        return m;
     }
 }

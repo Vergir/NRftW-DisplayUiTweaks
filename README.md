@@ -32,6 +32,7 @@ how each part works, the game behaviour it depends on and the pitfalls found on 
 | `src/UiBox.cs`, `src/UiScaling.cs`, `src/UiToolkitBoxing.cs` | The UI box (`UIAspectConstraint` replacement), canvas scale overrides, UI Toolkit screens. |
 | `src/RenderPipelineTweaks.cs` | Letterbox off. |
 | `src/SettingsRows.cs` | The rows at the end of Options > Display (Mod Settings Tab moves them to its Mods tab). |
+| `src/Shared/SettingsRowsKit.cs` | Settings-row helpers shared by the author's mods (vendored copy; do not edit here). |
 | `src/Hud/HudWidgets.cs`, `HudLayout.cs`, `HudBoxing.cs` | The 16 HUD elements, the saved layout applied every frame, edge-pinned elements put into a UI box. |
 | `src/Hud/HudEditor.cs`, `HudSamples.cs`, `MenuHud.cs`, `ChatRows.cs` | Edit HUD Layout: picking, dragging, the chat bracket, sample content, the main-menu HUD copy, extra chat rows. |
 | `src/Hud/SettingsPreview.cs`, `HideOutsideCombat.cs` | Previews over the settings menu; Hide HUD Outside Combat. |

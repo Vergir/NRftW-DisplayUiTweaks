@@ -15,6 +15,7 @@ types without a namespace live in `Il2Cpp`).
 | `UiToolkitBoxing.cs` | Inline styles that box the bounty boards and the map's detail bar. |
 | `RenderPipelineTweaks.cs` | Letterbox off. |
 | `SettingsRows.cs` | The rows in Options > Display. |
+| `Shared/SettingsRowsKit.cs` | Settings-row helpers shared with the author's other mods: adding, removing, reference cleanup. Vendored copy of the workspace's `mods/Shared/SettingsRowsKit.cs` (synced by `mods/Shared/sync-shared.ps1`; the build warns when they differ). |
 | `Hud/HudWidgets.cs` | The HUD elements the layout knows: paths under PlayerHUD, geometry helpers. |
 | `Hud/HudLayout.cs` | The user's HUD layout: binding to the live HUD, saving, applying every frame. |
 | `Hud/HudBoxing.cs` | Puts the HUD elements the game pins to the screen edges into a UI box. |
@@ -148,7 +149,8 @@ Four screens use UI Toolkit (`UIDocument`): `ActivityScreenPanel.Document` and `
 
 The rows are built with the game's own `SettingsScreenControls.AddSliderItem`, `AddButtonItem` and
 `AddActualDropDownItem` (string[] overload) in a `DisplaySettingsTab.Initialize` postfix. Mod Settings Tab, if installed,
-moves them to its Mods tab, so the mod finds its rows anywhere in the screen when it removes them.
+moves them to its Mods tab, so the mod looks for its rows in every tab of the screen when it removes them. The
+adding, removal and reference cleanup are in the shared `Shared/SettingsRowsKit.cs`.
 
 * `AddSliderItem` works on a normalized 0..1 value with a fixed increment; the mod maps that to its ranges. Its
   `IPlayerSettingAdapter<float>` argument is only stored by the row, never read, so null is passed.
