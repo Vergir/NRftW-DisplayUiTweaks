@@ -24,6 +24,7 @@ types without a namespace live in `Il2Cpp`).
 | `Hud/MenuHud.cs` | The HUD copy the editor uses in the main menu. |
 | `Hud/HideOutsideCombat.cs` | Hide HUD Outside Combat. |
 | `Hud/ChatRows.cs` | Extra chat message rows for a taller chat window. |
+| `Patches/ChatBubblePatches.cs` | Guard for a game bug: destroyed chat bubbles left registered. |
 | `Hud/SettingsPreview.cs` | Previews over the settings menu: UI area outline, half-transparent HUD. |
 | `DevCommands.cs` | Development commands (only with `UserData/DisplayUiTweaks/.dev`). |
 | `Patches/*.cs` | Harmony patches. |
@@ -275,6 +276,23 @@ PlayerJournal and PlayerDurability once `PlayerControllerView.LocalPlayerInComba
 seconds. "On, but show health while hurt" leaves PlayerHealth out while `PlayerHealthUI.m_cachedCurrentHealth` is below
 the maximum. Item pickups (ItemGetNotifications), hints and chat are never faded.
 
+## Chat bubble guard (game bug)
+
+`Moon.Chat.RefreshChatMessages.Tick` runs every frame over `PlayerChatState.ChatBubbles`
+(`Dictionary<RuntimeCharacterReference, ChatBubble>`, the speech bubbles over heroes other than your own; reached
+through `ViewFrame.Chat`, a `ValueTuple<PlayerChatState, PlayerChatAPI>` stored inline) and calls `gameObject` /
+`SetActive` on each bubble. `PlayerChatAPI.UnregisterChatBubble(HeroView)` looks the key up from the hero's entity and
+does nothing when that entity is already gone from the simulation frame, so a bubble can stay registered after its hero
+left (death / respawn, a co-op player leaving). When the bubble's object is destroyed later, Tick throws a
+NullReferenceException (`ThrowHelper.ThrowNullReferenceException`) every frame, and the game's exception guard ends
+the session about 10 s later ("Unstable environment, too many exceptions, terminating build"). Seen twice on
+2026-10-06 / 08, both after a death, in sessions where other hero views had come and gone.
+
+A prefix on Tick removes entries whose bubble is destroyed (Unity null) and logs each removal. The game's own
+`Register` / `Unregister` and the dictionary's enumerator and `Remove` for this instantiation all exist in the build,
+so the interop calls are safe. Dev commands `bubbles` (list) and `bubbletest add|kill` (register a fake bubble, then
+destroy it while it is registered) reproduce the bug on demand.
+
 ## Letterbox
 
 `MoonRenderPipelineView.Render` letterboxes the world to 16:9 when `MoonRenderPipelineAsset.Enforce169Aspect` says so
@@ -318,7 +336,7 @@ HUD in memory and re-evaluate the equipment layout), `menutest` / `menuoff` (sho
 game), `chatsize W H` (chat size factors), `options` / `options close` (open / close the player menu's settings),
 `select ROW` (select one of our rows by name, e.g. `DUT_UiArea`), `hud N` (HUD size %), `chatinfo` / `chatcanvas
 [toggle]` / `chattest` (chat window scale, its nested canvas, a red rectangle over it), `find PREFIX` /
-`findtext TEXT` (scene objects / texts).
+`findtext TEXT` (scene objects / texts), `bubbles` / `bubbletest add|kill` (chat bubbles; see Chat bubble guard).
 
 Showcase (`showcase on|off` or F9, dev only; `Hud/Showcase.cs`) is a screenshot mode for the Nexus images: realistic
 chat lines (the editor's samples without its own line) in the live chat, kept visible; every item pickup gets a static copy in its

@@ -3,7 +3,7 @@ using MelonLoader;
 using DisplayUiTweaks;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.1.1", "vergir")]
+[assembly: MelonInfo(typeof(DisplayUiTweaksMod), "Display & UI Tweaks", "1.1.2", "vergir")]
 [assembly: MelonGame("Moon Studios", "NoRestForTheWicked")]
 // Patches are applied in OnInitializeMelon, only when enabled (MelonLoader would otherwise apply them all by itself).
 [assembly: HarmonyDontPatchAll]

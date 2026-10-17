@@ -147,6 +147,35 @@ internal static class DevCommands
                                 DisplayUiTweaksMod.Log.Msg($"  {tpath} active {t.gameObject.activeInHierarchy} canvas {(cv != null ? cv.rootCanvas.name + "/" + cv.rootCanvas.renderMode + "/" + cv.rootCanvas.sortingOrder : "-")} lossy {t.transform.lossyScale}");
                             }
                         break;
+                    case "bubbles":
+                    {
+                        var b = Patches.RefreshChatMessagesPatch.State?.ChatBubbles;
+                        if (b == null) { DisplayUiTweaksMod.Log.Msg("  no chat state yet"); break; }
+                        foreach (var kv in b)
+                            DisplayUiTweaksMod.Log.Msg($"  bubble {kv.Key.Raw}: {(kv.Value == null ? "DESTROYED" : kv.Value.gameObject.name + " active " + kv.Value.gameObject.activeSelf)}");
+                        DisplayUiTweaksMod.Log.Msg($"  {b.Count} bubble(s)");
+                        break;
+                    }
+                    case "bubbletest":
+                    {
+                        // The game bug on purpose: "bubbletest add" registers a fake bubble, "bubbletest kill" destroys it
+                        // while it stays registered. Without the guard in ChatBubblePatches the game then throws every
+                        // frame and ends the session ~10 s later.
+                        var b = Patches.RefreshChatMessagesPatch.State?.ChatBubbles;
+                        if (b == null) { DisplayUiTweaksMod.Log.Msg("  no chat state yet"); break; }
+                        var testKey = new Il2CppQuantum.RuntimeCharacterReference { Raw = 0x7FFF0001 };
+                        if (a.Length > 1 && a[1] == "kill")
+                        {
+                            bool found = b.TryGetValue(testKey, out var test) && test != null;
+                            if (found) UnityEngine.Object.Destroy(test!.gameObject);
+                            DisplayUiTweaksMod.Log.Msg(found ? "  destroyed the test bubble" : "  no test bubble");
+                            break;
+                        }
+                        var go = new GameObject("DUT_BubbleTest");
+                        b[testKey] = go.AddComponent<Il2CppMoon.Forsaken.ChatBubble>();
+                        DisplayUiTweaksMod.Log.Msg("  registered a test bubble");
+                        break;
+                    }
                     case "chattest":
                     {
                         // A translucent red rectangle stretched over the chat window: does the window draw where its rect is?

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+* Fix for a game bug that could end the session a few seconds after a death or after a co-op player left ("Unstable
+  environment, too many exceptions"): a speech bubble of a hero that was gone stayed registered with the chat, and once
+  it was destroyed the chat threw an error every frame. The mod now drops such bubbles before the chat reaches them.
+
 ## 1.1.1
 
 * Fix: hitches of 0.3-0.5 s about a second after every area streamed in while travelling. The mod searched all
